@@ -37,6 +37,23 @@
       --tooltip-text: #f0f4f2;
       --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.02);
       --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.05);
+
+      /* 퇴고 단계별 컬러 (주간) */
+      --rev-0-bg: #f2f5f3;
+      --rev-0-text: #5f7068;
+      --rev-0-border: #d4ded9;
+
+      --rev-1-bg: #e8f0fe;
+      --rev-1-text: #185abc;
+      --rev-1-border: #aecbfa;
+
+      --rev-2-bg: #fef0e3;
+      --rev-2-text: #a85208;
+      --rev-2-border: #f8cdad;
+
+      --rev-3-bg: #e6f4ea;
+      --rev-3-text: #137333;
+      --rev-3-border: #a8dab5;
     }
 
     body.dark-mode {
@@ -71,10 +88,27 @@
       --tooltip-text: #e2eae5;
       --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
       --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.3);
+
+      /* 퇴고 단계별 컬러 (야간) */
+      --rev-0-bg: #1c2420;
+      --rev-0-text: #7c9187;
+      --rev-0-border: #293830;
+
+      --rev-1-bg: #142236;
+      --rev-1-text: #8ab4f8;
+      --rev-1-border: #253e5e;
+
+      --rev-2-bg: #302015;
+      --rev-2-text: #f39e58;
+      --rev-2-border: #5a3b22;
+
+      --rev-3-bg: #152b1f;
+      --rev-3-text: #6ad99b;
+      --rev-3-border: #235438;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", sans-serif; }
-html { font-size: 19px; }
+    html { font-size: 19px; }
     body { background-color: var(--bg); color: var(--text-main); line-height: 1.5; padding: 22px 34px; -webkit-font-smoothing: antialiased; transition: background-color 0.2s, color 0.2s; }
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
@@ -267,9 +301,9 @@ html { font-size: 19px; }
       justify-content: space-between;
     }
 
-    .panel-collapsible { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); overflow: hidden; transition: border-color 0.15s; }
-    .panel-toggle-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; background: var(--card-bg); transition: background 0.15s; }
-    .panel-toggle-header:hover { background: var(--card-sub-bg); }
+    .panel-collapsible { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); transition: border-color 0.15s; }
+    .panel-toggle-header { padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; background: var(--card-bg); transition: background 0.15s; border-radius: 13px; }
+    .panel-collapsible.open .panel-toggle-header { border-radius: 13px 13px 0 0; }
     .panel-toggle-title-area { display: flex; flex-direction: column; }
     .panel-toggle-step { font-size: 0.68rem; font-weight: 800; color: var(--primary-accent); letter-spacing: 0.05em; }
     .panel-toggle-heading { font-size: 0.92rem; font-weight: 700; color: var(--text-main); }
@@ -277,6 +311,7 @@ html { font-size: 19px; }
     .panel-collapsible.open .panel-toggle-arrow { transform: rotate(180deg); }
     .panel-collapse-content { display: none; padding: 0 18px 18px 18px; border-top: 1px solid var(--border-light); }
     .panel-collapsible.open .panel-collapse-content { display: block; padding-top: 16px; }
+    .tip-wrap:hover { z-index: 200; }
 
     .sidebar-controls-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 4px 2px 4px; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
     .btn-toggle-all { background: none; border: 1px solid var(--border); padding: 3px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; color: var(--primary-accent); cursor: pointer; }
@@ -314,6 +349,126 @@ html { font-size: 19px; }
     .btn-primary:hover { background: var(--primary-accent); }
     .btn-secondary { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); }
     .btn-secondary:hover { background: var(--card-sub-bg); }
+
+    /* 회차별 퇴고 관리 패널 전용 스타일 */
+    .rev-stats-box {
+      background: var(--card-sub-bg);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .rev-stats-chips {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .rev-stat-chip {
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid transparent;
+    }
+    .rev-stat-chip.c-0 { background: var(--rev-0-bg); color: var(--rev-0-text); border-color: var(--rev-0-border); }
+    .rev-stat-chip.c-1 { background: var(--rev-1-bg); color: var(--rev-1-text); border-color: var(--rev-1-border); }
+    .rev-stat-chip.c-2 { background: var(--rev-2-bg); color: var(--rev-2-text); border-color: var(--rev-2-border); }
+    .rev-stat-chip.c-3 { background: var(--rev-3-bg); color: var(--rev-3-text); border-color: var(--rev-3-border); }
+
+    .rev-range-form {
+      background: var(--card-sub-bg);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .rev-range-form-title {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--primary-accent);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .rev-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 10px;
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+    .rev-legend-item {
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      border: 1px solid transparent;
+    }
+
+    .rev-grid-container {
+      max-height: 250px;
+      overflow-y: auto;
+      padding: 8px;
+      background: var(--card-sub-bg);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+      gap: 6px;
+    }
+    .rev-cell {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 7px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.76rem;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+      border: 1px solid var(--border);
+      transition: transform 0.1s, box-shadow 0.1s;
+      outline: none;
+      padding: 0;
+      font-family: inherit;
+      line-height: normal;
+    }
+    .rev-cell:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+      z-index: 5;
+    }
+    .rev-cell.status-0 { background: var(--rev-0-bg); color: var(--rev-0-text); border-color: var(--rev-0-border); }
+    .rev-cell.status-1 { background: var(--rev-1-bg); color: var(--rev-1-text); border-color: var(--rev-1-border); }
+    .rev-cell.status-2 { background: var(--rev-2-bg); color: var(--rev-2-text); border-color: var(--rev-2-border); }
+    .rev-cell.status-3 { background: var(--rev-3-bg); color: var(--rev-3-text); border-color: var(--rev-3-border); }
+
+    .rev-cell-badge {
+      display: none;
+      position: absolute;
+      top: 1px;
+      right: 3px;
+      font-size: 0.62rem;
+      font-weight: 900;
+      color: var(--primary-accent);
+      line-height: 1;
+    }
+    .rev-cell.uploaded .rev-cell-badge {
+      display: block;
+    }
+    body.dark-mode .rev-cell-badge {
+      color: #61cf90;
+    }
 
     .main-content { display: flex; flex-direction: column; gap: 20px; }
     .schedule-header { display: flex; justify-content: space-between; align-items: center; }
@@ -530,9 +685,10 @@ html { font-size: 19px; }
         <div class="settings-menu" id="settingsMenu">
           <button class="settings-menu-item" id="themeToggleBtn" onclick="toggleDarkMode()">🌙 야간 모드</button>
           <button class="settings-menu-item" onclick="exportJSON()">💾 전체 백업</button>
+          <button class="settings-menu-item" onclick="openUpdateModal()">📢 업데이트 내역 보기</button>
           <button class="settings-menu-item" onclick="triggerJsonImport()">📂 백업 복원</button>
           <div class="settings-divider"></div>
-          <button class="settings-menu-item danger" onclick="resetForm()">⚠️ 전체 데이터 초기화</button>
+          <button class="settings-menu-item danger" onclick="resetForm()">⚠️️ 전체 데이터 초기화</button>
         </div>
       </div>
     </div>
@@ -864,6 +1020,88 @@ html { font-size: 19px; }
             </div>
           </div>
 
+          <!-- [신규 기능] 회차별 퇴고 현황 패널 (기본 접힘) -->
+          <div class="panel-collapsible" id="collapsePanelRevision">
+            <div class="panel-toggle-header" onclick="togglePanel('collapsePanelRevision')">
+              <div class="panel-toggle-title-area">
+                <span class="panel-toggle-step">MANUSCRIPT REVISION</span>
+                <span class="panel-toggle-heading" style="display:inline-flex; align-items:center; gap:4px;">
+                  회차별 퇴고 현황
+                  <span class="tip-wrap" onclick="event.stopPropagation()">
+                    <span class="tip-icon">?</span>
+                    <span class="tip-box">작품 기본 설정의 [목표 완결 회차]를 입력하면 회차 칸이 생성됩니다.<br><br>• 칸 클릭: 초고 → 1차 → 2차 → 최종 순으로 변경<br>• 범위 일괄 변경: 지정 구간 한 번에 적용<br>• 일정표에서 [올림✓] 시 모서리에 체크(✓) 표시</span>
+                  </span>
+                </span>
+              </div>
+              <span class="panel-toggle-arrow">▼</span>
+            </div>
+            <div class="panel-collapse-content">
+
+              <!-- 1. 단계별 진행률 요약 배너 -->
+              <div class="rev-stats-box">
+                <div style="font-size:0.72rem; font-weight:800; color:var(--text-muted); margin-bottom:6px; display:flex; justify-content:space-between;">
+                  <span>단계별 진행 현황</span>
+                  <span id="revTargetEpMeta">목표 —화</span>
+                </div>
+                <div class="rev-stats-chips" id="revStatsChipsContainer">
+                  <div class="rev-stat-chip c-0"><span>초고</span><strong id="revCount0">0</strong></div>
+                  <div class="rev-stat-chip c-1"><span>1차 퇴고</span><strong id="revCount1">0</strong></div>
+                  <div class="rev-stat-chip c-2"><span>2차 퇴고</span><strong id="revCount2">0</strong></div>
+                  <div class="rev-stat-chip c-3"><span>송부용 최종</span><strong id="revCount3">0</strong></div>
+                </div>
+                <div class="launch-progress-bg" style="height:6px; background:var(--border);">
+                  <div id="revFinalProgressFill" style="height:100%; width:0%; background:var(--success); border-radius:3px; transition:width 0.3s;"></div>
+                </div>
+                <div style="font-size:0.68rem; color:var(--text-muted); font-weight:700; margin-top:5px; text-align:right;" id="revFinalProgressText">
+                  송부용 최종 달성률: 0%
+                </div>
+              </div>
+
+              <!-- 2. 범위 일괄 변경 폼 -->
+              <div class="rev-range-form">
+                <div class="rev-range-form-title">
+                  <span>⚡ 범위 일괄 변경</span>
+                  <span style="font-size:0.68rem; font-weight:normal; color:var(--text-muted);">지정 구간 한 번에 적용</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                  <input type="number" id="revRangeStart" class="form-control" placeholder="시작(화)" min="1" style="padding:6px 8px; font-size:0.78rem;">
+                  <span style="font-size:0.78rem; font-weight:bold; color:var(--text-muted);">~</span>
+                  <input type="number" id="revRangeEnd" class="form-control" placeholder="종료(화)" min="1" style="padding:6px 8px; font-size:0.78rem;">
+                </div>
+                <div style="display:flex; gap:6px;">
+                  <select id="revRangeStage" class="form-control" style="padding:6px 8px; font-size:0.78rem; flex:1;">
+                    <option value="0">초고로 변경</option>
+                    <option value="1">1차 퇴고로 변경</option>
+                    <option value="2">2차 퇴고로 변경</option>
+                    <option value="3">송부용 최종 퇴고로 변경</option>
+                  </select>
+                  <button type="button" class="btn-action btn-secondary" style="width:auto; padding:6px 12px; font-size:0.78rem; white-space:nowrap;" onclick="applyRevisionRange()">일괄 변경</button>
+                </div>
+              </div>
+
+              <!-- 3. 범례 및 설명 -->
+              <div class="rev-legend">
+                <span class="rev-legend-item" style="background:var(--rev-0-bg); color:var(--rev-0-text); border-color:var(--rev-0-border);">초고</span>
+                <span class="rev-legend-item" style="background:var(--rev-1-bg); color:var(--rev-1-text); border-color:var(--rev-1-border);">1차 퇴고</span>
+                <span class="rev-legend-item" style="background:var(--rev-2-bg); color:var(--rev-2-text); border-color:var(--rev-2-border);">2차 퇴고</span>
+                <span class="rev-legend-item" style="background:var(--rev-3-bg); color:var(--rev-3-text); border-color:var(--rev-3-border);">최종</span>
+                <span class="rev-legend-item" style="background:var(--card-bg); border-color:var(--border);">✓ 업로드완료</span>
+              </div>
+
+              <!-- 4. 회차별 격자 영역 -->
+              <div class="rev-grid-container" id="revGridContainer">
+                <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px 10px; font-size: 0.78rem;">
+                  목표 완결 회차를 설정하면 회차 칸이 표시됩니다.
+                </div>
+              </div>
+              <div class="form-tip" style="margin-top:6px;">
+                * 회차 칸을 누르면 <strong>초고 → 1차 → 2차 → 최종</strong> 순으로 변경됩니다.<br>
+                * 업로드 완료(올림✓) 시 칸 모서리에 <strong>✓</strong> 표시가 붙습니다.
+              </div>
+
+            </div>
+          </div>
+
           <!-- 5. D-Day 마감 관리 (기본 접힘) -->
           <div class="panel-collapsible" id="collapsePanelDDays">
             <div class="panel-toggle-header" onclick="togglePanel('collapsePanelDDays')">
@@ -1010,31 +1248,56 @@ html { font-size: 19px; }
           <button class="btn-action btn-primary" style="width: auto; padding: 8px 16px;" onclick="openContractModal()">+ 새 계약 등록</button>
         </div>
       </div>
-
-      <div class="kpi-grid">
+      <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
         <div class="kpi-card highlight">
-          <div class="kpi-label">관리 중인 계약</div>
+          <div class="kpi-label">등록 중인 계약</div>
           <div class="kpi-value" id="kpiContractCount">0건</div>
           <div class="kpi-sub">총 계약 관리 건수</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">해지 통보 임박 (90일 내)</div>
-          <div class="kpi-value" id="kpiNoticeUrgent" style="color: var(--amber);">0건</div>
-          <div class="kpi-sub">자동연장 전 통보 필요</div>
+          <div class="kpi-label">미계약 작품</div>
+          <div class="kpi-value" id="kpiUncontractedCount" style="color: var(--amber);">0건</div>
+          <div class="kpi-sub">투고 준비·진행 중</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">마감 진행 중 작품</div>
-          <div class="kpi-value" id="kpiActiveDeadline">0건</div>
-          <div class="kpi-sub">내 마감 기준 카운트</div>
+          <div class="kpi-label">계약된 작품</div>
+          <div class="kpi-value" id="kpiContractedProjCount" style="color: var(--primary-accent);">0건</div>
+          <div class="kpi-sub">계약 체결 완료</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">출간 완료 작품</div>
           <div class="kpi-value" id="kpiPublishedCount" style="color: var(--success);">0건</div>
-          <div class="kpi-sub">출간일 등록 기준 합산</div>
+          <div class="kpi-sub">출간일 등록 기준</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">해지 통보 임박</div>
+          <div class="kpi-value" id="kpiNoticeUrgent" style="color: var(--danger);">0건</div>
+          <div class="kpi-sub">90일 내 통보 필요</div>
         </div>
       </div>
+      
+      <!-- 1. 미계약 작품 섹션 (최상단 배치) -->
+      <div id="uncontractedSection" style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h3 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+              <span>미계약 작품</span>
+              <span id="uncontractedCountBadge" style="font-size: 0.72rem; font-weight: 800; background: var(--amber-light); color: var(--amber); padding: 2px 8px; border-radius: 12px; border: 1px solid var(--amber-border);">0작품</span>
+            </h3>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">계약이 아직 등록되지 않은 작업 중인 작품들의 투고 진행 상황을 관리합니다.</span>
+          </div>
+        </div>
+        <div class="contract-grid" id="uncontractedCardsContainer" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));"></div>
+      </div>
 
-      <div class="contract-grid" id="contractCardsContainer"></div>
+      <!-- 2. 구분선 및 계약 체결 작품 목록 -->
+      <div style="border-top: 1px solid var(--border); padding-top: 22px; margin-top: 10px; display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <h3 style="font-size: 1.05rem; font-weight: 700;">계약 체결 작품</h3>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">출판사와 정식 계약이 체결된 포트폴리오 목록입니다.</span>
+        </div>
+        <div class="contract-grid" id="contractCardsContainer"></div>
+      </div>
     </div>
   </div>
 
@@ -1062,7 +1325,8 @@ html { font-size: 19px; }
             <p>
               • <strong>계약된 작품 등록:</strong> <strong>📑 작품 & 계약 관리</strong> 탭에서 <strong>+ 새 계약 등록</strong>을 누르면 스케줄러에 해당 작품이 자동으로 생깁니다.<br>
               • <strong>자유 연재 작품 등록:</strong> 계약서가 없는 작품은 화면 상단의 <strong>+ 새 작품 추가</strong> 버튼을 눌러 직접 이름을 입력해 만듭니다.<br>
-              • <strong>기준값 채우기:</strong> <strong>작품 기본 설정 (기준값)</strong>을 열어 회당 글자수, 연재 시작일, 목표 완결 회차를 적고, <strong>현재 원고 & 비축 현황</strong>에 지금 보유한 비축분 회차를 입력해 주세요.
+              • <strong>기준값 채우기:</strong> <strong>작품 기본 설정 (기준값)</strong>을 열어 회당 글자수, 연재 시작일, 목표 완결 회차를 적고, <strong>현재 원고 & 비축 현황</strong>에 지금 보유한 비축분 회차를 입력해 주세요.<br>
+              • <strong>회차별 퇴고 관리:</strong> <strong>회차별 퇴고 현황</strong> 패널에서 목표 회차 칸을 클릭해 초고부터 송부용 최종까지 실시간으로 진척도를 관리하세요.
             </p>
           </div>
         </div>
@@ -1077,7 +1341,7 @@ html { font-size: 19px; }
             <h3>매일 할 일</h3>
             <p>
               • <strong>집필 기록:</strong> 글을 쓴 뒤 <strong>+1화~+4화</strong> 빠른 버튼을 누르거나 <strong>글자수로 추가</strong>를 누르면 비축분에 즉시 누적됩니다.<br>
-              • <strong>업로드 완료 처리:</strong> 연재를 올린 날에는 아래 일정표에서 <strong>올림✓</strong> 버튼을 누르세요. 시작 직전 회차가 올라가고 비축분이 자동으로 줄어듭니다.<br>
+              • <strong>업로드 완료 처리:</strong> 연재를 올린 날에는 아래 일정표에서 <strong>올림✓</strong> 버튼을 누르세요. 시작 직전 회차가 올라가고 비축분이 자동으로 줄어들며, 퇴고 칸 모서리에 작은 ✓ 표시가 붙습니다.<br>
               • <strong>오늘 브리핑 확인:</strong> 화면 맨 위 <strong>📌 오늘 할 일 & 주요 마감 브리핑</strong>에서 오늘 올릴 회차와 다가오는 7일 내 마감을 확인하세요.
             </p>
           </div>
@@ -1120,7 +1384,7 @@ html { font-size: 19px; }
     </div>
   </div>
 
-  <!-- 모달 1: 새 작품 추가 -->
+  <!-- 모달 영역 (모든 팝업 창) -->
   <div class="modal-overlay" id="newProjectModal">
     <div class="modal-box" style="width: 360px;">
       <div class="modal-head">
@@ -1138,7 +1402,6 @@ html { font-size: 19px; }
     </div>
   </div>
 
-  <!-- 모달 2: 연재 구간 추가 -->
   <div class="modal-overlay" id="phaseModal">
     <div class="modal-box">
       <div class="modal-head">
@@ -1175,7 +1438,6 @@ html { font-size: 19px; }
     </div>
   </div>
 
-  <!-- 모달 3: 특별 집필 구간 추가 모달 -->
   <div class="modal-overlay" id="writingPhaseModal">
     <div class="modal-box" style="width: 440px;">
       <div class="modal-head">
@@ -1213,7 +1475,6 @@ html { font-size: 19px; }
     </div>
   </div>
 
-  <!-- 모달 4: 날짜 메모 및 휴재 -->
   <div class="modal-overlay" id="dateModal">
     <div class="modal-box">
       <div class="modal-head">
@@ -1237,7 +1498,6 @@ html { font-size: 19px; }
     </div>
   </div>
 
-  <!-- 모달 5: 계약 등록/수정 (상단 필수 노출 & 상세 옵션 접이식 분리) -->
   <div class="modal-overlay" id="contractModal">
     <div class="modal-box" style="width: 500px;">
       <div class="modal-head">
@@ -1247,7 +1507,6 @@ html { font-size: 19px; }
 
       <input type="hidden" id="editContractId">
 
-      <!-- 1. 핵심 필수 정보 (상시 노출) -->
       <div class="form-row">
         <div class="form-group">
           <label>작품명 *</label>
@@ -1279,7 +1538,6 @@ html { font-size: 19px; }
         </div>
       </div>
 
-      <!-- 만료일 및 통보 마감 계산 요약 배너 -->
       <div style="background:var(--card-sub-bg); padding:10px 12px; border-radius:8px; border:1px solid var(--border-light); margin-bottom:14px; font-size:0.78rem;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
           <div style="display:flex; align-items:center; gap:6px;">
@@ -1312,7 +1570,6 @@ html { font-size: 19px; }
         </div>
       </div>
 
-      <!-- 2. 접이식 상세 섹션: 타임라인 -->
       <div class="modal-accordion" id="modalSecTimeline">
         <div class="modal-accordion-header" onclick="toggleModalAccordion('modalSecTimeline')">
           <span>📅 작품 이력 타임라인 (연재·완결·체결·외전)</span>
@@ -1342,7 +1599,6 @@ html { font-size: 19px; }
         </div>
       </div>
 
-      <!-- 3. 접이식 상세 섹션: 듀얼 마감 설정 -->
       <div class="modal-accordion" id="modalSecDeadlines">
         <div class="modal-accordion-header" onclick="toggleModalAccordion('modalSecDeadlines')">
           <span>⏱️ 듀얼 마감 설정 (내 마감 / 출판사 공식 마감)</span>
@@ -1368,7 +1624,6 @@ html { font-size: 19px; }
         </div>
       </div>
 
-      <!-- 4. 접이식 상세 섹션: 정산 및 선인세 -->
       <div class="modal-accordion" id="modalSecFinance">
         <div class="modal-accordion-header" onclick="toggleModalAccordion('modalSecFinance')">
           <span>💰 정산 입금일 & 선인세·인세율</span>
@@ -1406,7 +1661,6 @@ html { font-size: 19px; }
         </div>
       </div>
 
-      <!-- 5. 접이식 상세 섹션: 자동 연장 및 메모 -->
       <div class="modal-accordion" id="modalSecRenewal">
         <div class="modal-accordion-header" onclick="toggleModalAccordion('modalSecRenewal')">
           <span>📝 자동 연장 단위 & 조항 메모</span>
@@ -1437,7 +1691,44 @@ html { font-size: 19px; }
     </div>
   </div>
 
+  <div class="modal-overlay" id="updateModal">
+    <div class="modal-box" style="width: 440px;">
+      <div class="modal-head">
+        <span>📢 ARCHIVE STUDIO 업데이트 안내</span>
+        <button style="border:none; background:none; font-size:1.2rem; cursor:pointer; color:inherit;" onclick="closeUpdateModal()">×</button>
+      </div>
+      <div id="updateNotesContent" style="font-size:0.82rem; color:var(--text-main); display:flex; flex-direction:column; gap:10px; max-height:260px; overflow-y:auto; padding-right:4px; line-height:1.5;">
+        <!-- 동적 렌더링 -->
+      </div>
+      <div class="modal-actions">
+        <button class="btn-action btn-primary" onclick="closeUpdateModal()">확인</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    const APP_VERSION = "v1.5";
+    const UPDATE_NOTES = [
+      {
+        version: "v1.5.0",
+        date: "2026-09-30",
+        notes: [
+          "미계약 작품 포트폴리오 최상단 배치 및 투고 현황 관리 기능 추가했어요.",
+          "회차별 4단계 퇴고 현황(초고~최종) 및 범위 일괄 변경 기능 추가했어요.",
+          "계약 관리 5개 핵심 지표 카드 개편 완료!"
+        ]
+      },
+      {
+        version: "v1.0",
+        date: "2026-09-29",
+        notes: [
+"플래너 최초 제작 및 배포 시작 ♥",
+          "문의사항이 있을 경우 트위터로 연락 부탁드립니다.",
+          "작가님들의 마감을 운영합니다! :)"
+        ]
+      }
+    ];
+
     const PIPELINE_STAGES = [
       "완고 인도",
       "리뷰",
@@ -1446,6 +1737,13 @@ html { font-size: 19px; }
       "표지 확인",
       "프로모션 심사",
       "프로모션 결과"
+    ];
+
+    const REVISION_STAGES = [
+      { key: 0, label: '초고', short: '초고' },
+      { key: 1, label: '1차 퇴고', short: '1차' },
+      { key: 2, label: '2차 퇴고', short: '2차' },
+      { key: 3, label: '송부용 최종 퇴고', short: '최종' }
     ];
 
     const PROJECT_PALETTES = [
@@ -1521,7 +1819,7 @@ html { font-size: 19px; }
     }
 
     function toggleAllSettingsPanels() {
-      const panels = ['collapsePanelStaticConfig', 'collapsePanelWritingPlan', 'collapsePanelSerialPhases', 'collapsePanelDDays'];
+      const panels = ['collapsePanelRevision', 'collapsePanelStaticConfig', 'collapsePanelWritingPlan', 'collapsePanelSerialPhases', 'collapsePanelDDays'];
       const areAnyOpen = panels.some(id => {
         const el = document.getElementById(id);
         return el && el.classList.contains('open');
@@ -1628,7 +1926,7 @@ html { font-size: 19px; }
 
     function initTooltipAutoPositioning() {
       document.addEventListener('mouseenter', (e) => {
-        const wrap = e.target.closest('.tip-wrap');
+        const wrap = (e.target && e.target.closest) ? e.target.closest('.tip-wrap') : null;
         if (!wrap) return;
         const rect = wrap.getBoundingClientRect();
         const tooltipWidth = 260;
@@ -1654,6 +1952,7 @@ html { font-size: 19px; }
       renderTodayBriefing();
       renderPaceRadar();
       initTooltipAutoPositioning();
+      checkVersionUpdate();
     };
 
     function initTheme() {
@@ -1687,6 +1986,7 @@ html { font-size: 19px; }
         saveCurrentProjectData();
         calculateSchedule();
         renderPaceRadar();
+        renderRevisionPanel();
       };
 
       fields.forEach(id => {
@@ -1706,6 +2006,7 @@ html { font-size: 19px; }
         document.getElementById('viewSchedule').classList.add('active');
         calculateSchedule();
         renderPaceRadar();
+        renderRevisionPanel();
       } else if (tab === 'contracts') {
         document.querySelector('.nav-tabs button:nth-child(2)').classList.add('active');
         document.getElementById('viewContracts').classList.add('active');
@@ -1723,6 +2024,124 @@ html { font-size: 19px; }
       renderCalendar();
     }
 
+    /* 회차별 퇴고 현황 렌더링 및 조작 로직 */
+    function renderRevisionPanel() {
+      const cur = getCurrentProject();
+      const container = document.getElementById('revGridContainer');
+      const targetEpMeta = document.getElementById('revTargetEpMeta');
+      if (!container) return;
+
+      if (!cur) {
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px 10px; font-size: 0.78rem;">선택된 작품이 없습니다.</div>';
+        return;
+      }
+
+      if (!cur.revisionStatus) {
+        cur.revisionStatus = {};
+      }
+
+      const targetEp = parseInt(cur.targetEp) || 0;
+      const startPrevEp = parseInt(cur.startPrevEp) || 0;
+
+      if (targetEp <= 0) {
+        if (targetEpMeta) targetEpMeta.textContent = '목표 미설정';
+        document.getElementById('revCount0').textContent = '0';
+        document.getElementById('revCount1').textContent = '0';
+        document.getElementById('revCount2').textContent = '0';
+        document.getElementById('revCount3').textContent = '0';
+        document.getElementById('revFinalProgressFill').style.width = '0%';
+        document.getElementById('revFinalProgressText').textContent = '송부용 최종 달성률: 0%';
+        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px 10px; font-size: 0.78rem;">작품 기본 설정에서 목표 완결 회차를 입력하면 1화부터 격자가 표시됩니다.</div>';
+        return;
+      }
+
+      if (targetEpMeta) targetEpMeta.textContent = `목표 ${targetEp}화`;
+
+      let counts = { 0: 0, 1: 0, 2: 0, 3: 0 };
+      let cellsHtml = '';
+
+      for (let ep = 1; ep <= targetEp; ep++) {
+        const rawStatus = cur.revisionStatus[ep] !== undefined ? parseInt(cur.revisionStatus[ep]) : 0;
+        const status = (isNaN(rawStatus) || rawStatus < 0 || rawStatus > 3) ? 0 : rawStatus;
+        counts[status] = (counts[status] || 0) + 1;
+
+        const isUploaded = ep <= startPrevEp;
+        const stageInfo = REVISION_STAGES[status] || REVISION_STAGES[0];
+        const titleText = `${ep}화: ${stageInfo.label}${isUploaded ? ' (업로드 완료)' : ''}`;
+
+        cellsHtml += `
+          <button type="button" class="rev-cell status-${status} ${isUploaded ? 'uploaded' : ''}" onclick="cycleRevisionStatus(${ep})" title="${titleText}">
+            <span>${ep}</span>
+            <span class="rev-cell-badge">✓</span>
+          </button>
+        `;
+      }
+
+      container.innerHTML = cellsHtml;
+
+      document.getElementById('revCount0').textContent = `${counts[0]}/${targetEp}화`;
+      document.getElementById('revCount1').textContent = `${counts[1]}/${targetEp}화`;
+      document.getElementById('revCount2').textContent = `${counts[2]}/${targetEp}화`;
+      document.getElementById('revCount3').textContent = `${counts[3]}/${targetEp}화`;
+
+      const finalPct = Math.min(100, Math.round((counts[3] / targetEp) * 100));
+      document.getElementById('revFinalProgressFill').style.width = `${finalPct}%`;
+      document.getElementById('revFinalProgressText').textContent = `송부용 최종 달성률: ${finalPct}% (${counts[3]}/${targetEp}화)`;
+    }
+
+    function cycleRevisionStatus(epNum) {
+      const cur = getCurrentProject();
+      if (!cur) return;
+
+      const ep = parseInt(epNum);
+      if (isNaN(ep) || ep <= 0) return;
+
+      if (!cur.revisionStatus) cur.revisionStatus = {};
+      const current = cur.revisionStatus[ep] !== undefined ? parseInt(cur.revisionStatus[ep]) : 0;
+      const next = (isNaN(current) ? 0 : current + 1) % 4;
+      cur.revisionStatus[ep] = next;
+
+      saveData();
+      renderRevisionPanel();
+    }
+
+    function applyRevisionRange() {
+      const cur = getCurrentProject();
+      if (!cur) return;
+
+      const start = parseInt(document.getElementById('revRangeStart').value);
+      const end = parseInt(document.getElementById('revRangeEnd').value);
+      const stage = parseInt(document.getElementById('revRangeStage').value);
+
+      if (isNaN(start) || isNaN(end) || start <= 0 || end <= 0) {
+        alert('올바른 시작 및 종료 회차를 입력해 주세요.');
+        return;
+      }
+      if (start > end) {
+        alert('시작 회차는 종료 회차보다 클 수 없습니다.');
+        return;
+      }
+
+      const targetEp = parseInt(cur.targetEp) || 0;
+      if (targetEp > 0 && end > targetEp) {
+        if (!confirm(`종료 회차(${end}화)가 현재 목표 완결 회차(${targetEp}화)를 초과합니다. 계속 적용할까요?`)) {
+          return;
+        }
+      }
+
+      if (!cur.revisionStatus) cur.revisionStatus = {};
+
+      for (let i = start; i <= end; i++) {
+        cur.revisionStatus[i] = stage;
+      }
+
+      saveData();
+      renderRevisionPanel();
+    }
+
+    window.cycleRevisionStatus = cycleRevisionStatus;
+    window.applyRevisionRange = applyRevisionRange;
+
     function loadSampleData() {
       if (!confirm("플래너 사용법을 쉽게 확인할 수 있는 '체험용 샘플 데이터'를 불러오시겠습니까? (기존에 작성하신 프로젝트 데이터는 그대로 유지됩니다.)")) return;
 
@@ -1733,6 +2152,11 @@ html { font-size: 19px; }
       const sampleLaunchDate = new Date(today.getTime() + (12 * 24 * 60 * 60 * 1000));
       const burstStart = new Date(today.getTime() + (2 * 24 * 60 * 60 * 1000));
       const burstEnd = new Date(today.getTime() + (6 * 24 * 60 * 60 * 1000));
+
+      const sampleRevision = {};
+      for (let i = 1; i <= 15; i++) sampleRevision[i] = 3; // 최종
+      for (let i = 16; i <= 30; i++) sampleRevision[i] = 2; // 2차
+      for (let i = 31; i <= 45; i++) sampleRevision[i] = 1; // 1차
 
       const sampleProj = {
         id: sampleProjId,
@@ -1746,6 +2170,7 @@ html { font-size: 19px; }
         dailyWritingPlan: '2',
         charsPerEp: '5500',
         charsPerVol: '130000',
+        revisionStatus: sampleRevision,
         writingPhases: [
           {
             id: Date.now() + 10,
@@ -1818,6 +2243,7 @@ html { font-size: 19px; }
       renderContracts();
       renderTodayBriefing();
       renderPaceRadar();
+      renderRevisionPanel();
       switchTab('schedule');
     }
 
@@ -1860,8 +2286,13 @@ html { font-size: 19px; }
           }
 
           if (confirm("백업 파일을 불러오시겠습니까? 현재 화면의 데이터가 파일 내용으로 교체됩니다.")) {
-            projects = imported.projects;
-            contracts = imported.contracts;
+            projects = imported.projects || [];
+            projects.forEach(p => {
+              if (!p.writingPhases) p.writingPhases = [];
+              if (!p.revisionStatus || typeof p.revisionStatus !== 'object' || Array.isArray(p.revisionStatus)) p.revisionStatus = {};
+              if (!p.submissionStatus) p.submissionStatus = '투고 준비';
+            });
+            contracts = imported.contracts || [];
             currentProjectId = imported.currentProjectId || (projects[0] ? projects[0].id : null);
             saveData();
             renderProjectsSelect();
@@ -1869,6 +2300,7 @@ html { font-size: 19px; }
             renderContracts();
             renderTodayBriefing();
             renderPaceRadar();
+            renderRevisionPanel();
           }
         } catch (err) {
           alert("파일을 읽는 중 오류가 발생했습니다: " + err.message);
@@ -1914,6 +2346,7 @@ html { font-size: 19px; }
       renderProjectsSelect();
       renderTodayBriefing();
       renderPaceRadar();
+      renderRevisionPanel();
     }
 
     function openNewProjectModal() {
@@ -1945,13 +2378,18 @@ html { font-size: 19px; }
         dailyWritingPlan: '0',
         charsPerEp: '5500',
         charsPerVol: '130000',
+        revisionStatus: {},
         writingPhases: [],
         phases: [],
         hiatusDates: [],
         dateMemos: {},
         dDayList: [],
         writingLogs: [],
-        hideFromRadar: false
+        hideFromRadar: false,
+        submissionStatus: '투고 준비',
+        submissionPublisher: '',
+        submissionDate: '',
+        submissionMemo: ''
       };
 
       projects.push(newProj);
@@ -1962,6 +2400,7 @@ html { font-size: 19px; }
       loadCurrentProjectData();
       renderTodayBriefing();
       renderPaceRadar();
+      renderRevisionPanel();
     }
 
     function deleteCurrentProject() {
@@ -1978,6 +2417,7 @@ html { font-size: 19px; }
       loadCurrentProjectData();
       renderTodayBriefing();
       renderPaceRadar();
+      renderRevisionPanel();
     }
 
     function loadCurrentProjectData() {
@@ -1989,6 +2429,7 @@ html { font-size: 19px; }
         renderPaceRadar();
         renderLaunchCountdownBox(null);
         renderWritingPhaseList();
+        renderRevisionPanel();
         return;
       }
 
@@ -2013,6 +2454,7 @@ html { font-size: 19px; }
       renderWritingLogs();
       calculateSchedule();
       renderPaceRadar();
+      renderRevisionPanel();
     }
 
     function saveCurrentProjectData() {
@@ -2171,7 +2613,7 @@ html { font-size: 19px; }
       document.getElementById('ctNoticeDeadline').value = formatDate(noticeDate);
     }
 
-    function openContractModal(editId = null) {
+    function openContractModal(editId = null, prefillTitle = null) {
       document.getElementById('editContractId').value = editId || '';
       document.getElementById('contractModalTitle').textContent = editId ? '작품 & 계약 정보 수정' : '새 작품 & 계약 등록';
 
@@ -2229,8 +2671,12 @@ html { font-size: 19px; }
         document.getElementById('ctRenewalUnit').value = '1년 단위';
         document.getElementById('ctShowInRadar').checked = true;
 
-        const curProj = getCurrentProject();
-        if (curProj) document.getElementById('ctTitle').value = curProj.title;
+        if (prefillTitle) {
+          document.getElementById('ctTitle').value = prefillTitle;
+        } else {
+          const curProj = getCurrentProject();
+          if (curProj) document.getElementById('ctTitle').value = curProj.title;
+        }
       }
 
       document.getElementById('contractModal').style.display = 'flex';
@@ -2304,6 +2750,7 @@ html { font-size: 19px; }
             dailyWritingPlan: '0',
             charsPerEp: '5500',
             charsPerVol: '130000',
+            revisionStatus: {},
             writingPhases: [],
             phases: [],
             hiatusDates: [],
@@ -2328,6 +2775,7 @@ html { font-size: 19px; }
       calculateSchedule();
       renderTodayBriefing();
       renderPaceRadar();
+      renderRevisionPanel();
     }
 
     function deleteContract(id) {
@@ -2361,6 +2809,7 @@ html { font-size: 19px; }
       calculateSchedule();
       renderTodayBriefing();
       renderPaceRadar();
+      renderRevisionPanel();
     }
 
     function moveContract(id, direction) {
@@ -2601,10 +3050,17 @@ html { font-size: 19px; }
         }).join('');
       }
 
+      const uncontractedProjects = projects.filter(p =>
+        !contracts.some(c => String(c.title || '').trim().toLowerCase() === String(p.title || '').trim().toLowerCase())
+      );
+      const uncontractedCount = uncontractedProjects.length;
+      const contractedProjCount = Math.max(0, projects.length - uncontractedCount);
+
       document.getElementById('kpiContractCount').textContent = `${contracts.length}건`;
-      document.getElementById('kpiNoticeUrgent').textContent = `${urgentCount}건`;
-      document.getElementById('kpiActiveDeadline').textContent = `${activeDeadlineCount}건`;
+      document.getElementById('kpiUncontractedCount').textContent = `${uncontractedCount}건`;
+      document.getElementById('kpiContractedProjCount').textContent = `${contractedProjCount}건`;
       document.getElementById('kpiPublishedCount').textContent = `${publishedCount}건`;
+      document.getElementById('kpiNoticeUrgent').textContent = `${urgentCount}건`;
 
       const banner = document.getElementById('contractAlertBanner');
       if (urgentTitles.length > 0) {
@@ -2613,6 +3069,93 @@ html { font-size: 19px; }
       } else {
         banner.classList.remove('show');
       }
+
+      renderUncontractedProjects(uncontractedProjects);
+    }
+
+    function escUncontracted(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function updateProjectSubmission(projId, field, value) {
+      const proj = projects.find(p => p.id === projId);
+      if (!proj) return;
+      proj[field] = value;
+      saveData();
+    }
+
+    function openContractFromUncontracted(projId) {
+      const proj = projects.find(p => p.id === projId);
+      openContractModal(null, proj ? proj.title : null);
+    }
+
+    function renderUncontractedProjects(uncontractedList) {
+      const container = document.getElementById('uncontractedCardsContainer');
+      const badge = document.getElementById('uncontractedCountBadge');
+      if (!container) return;
+
+      if (badge) badge.textContent = `${uncontractedList.length}작품`;
+
+      if (uncontractedList.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 24px; background:var(--card-sub-bg); border-radius:10px; border:1px dashed var(--border); color:var(--text-muted); font-size:0.8rem;">모든 작업 중인 작품에 계약이 등록되어 있습니다. (미계약 작품 없음)</div>`;
+        return;
+      }
+
+      const esc = escUncontracted;
+      container.innerHTML = uncontractedList.map(p => {
+        const status = p.submissionStatus || '투고 준비';
+        const pub = p.submissionPublisher || '';
+        const subDate = p.submissionDate || '';
+        const memo = p.submissionMemo || '';
+        const pid = JSON.stringify(p.id);
+
+        return `
+          <div class="contract-card" style="padding:16px 18px; gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  <h4 style="font-size:1rem; font-weight:800; letter-spacing:-0.02em;">${esc(p.title)}</h4>
+                  <span style="font-size:0.7rem; font-weight:800; background:var(--amber-light); color:var(--amber); border:1px solid var(--amber-border); padding:1px 6px; border-radius:4px;">미계약</span>
+                </div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">
+                  ${p.targetEp ? `목표 ${esc(p.targetEp)}화` : '완결 회차 미정'} · 현재 비축 ${esc(p.stockpile || 0)}화
+                </div>
+              </div>
+              <button class="btn-xs" style="background:var(--primary-light); color:var(--primary-accent); border-color:var(--primary-border); font-weight:700;" onclick='openContractFromUncontracted(${pid})'>+ 계약 등록하기</button>
+            </div>
+
+            <div style="background:var(--card-sub-bg); padding:10px 12px; border-radius:8px; border:1px solid var(--border-light); display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <label style="font-size:0.75rem; font-weight:700; color:var(--text-muted); white-space:nowrap;">투고 상태</label>
+                <select class="form-control" style="padding:4px 8px; font-size:0.78rem; width:auto; font-weight:700;" onchange='updateProjectSubmission(${pid}, "submissionStatus", this.value)'>
+                  <option value="투고 준비" ${status === '투고 준비' ? 'selected' : ''}>투고 준비</option>
+                  <option value="투고 중" ${status === '투고 중' ? 'selected' : ''}>투고 중</option>
+                  <option value="반려" ${status === '반려' ? 'selected' : ''}>반려</option>
+                  <option value="보류" ${status === '보류' ? 'selected' : ''}>보류</option>
+                </select>
+              </div>
+
+              <div class="form-row" style="margin-bottom:0; gap:8px;">
+                <div>
+                  <label style="font-size:0.7rem; font-weight:600; color:var(--text-muted); margin-bottom:2px; display:block;">투고 출판사</label>
+                  <input type="text" class="form-control" style="padding:5px 8px; font-size:0.78rem;" placeholder="예: OO출판사" value="${esc(pub)}" onchange='updateProjectSubmission(${pid}, "submissionPublisher", this.value)'>
+                </div>
+                <div>
+                  <label style="font-size:0.7rem; font-weight:600; color:var(--text-muted); margin-bottom:2px; display:block;">투고일</label>
+                  <input type="date" class="form-control" style="padding:4px 8px; font-size:0.78rem;" value="${esc(subDate)}" onchange='updateProjectSubmission(${pid}, "submissionDate", this.value)'>
+                </div>
+              </div>
+
+              <div>
+                <label style="font-size:0.7rem; font-weight:600; color:var(--text-muted); margin-bottom:2px; display:block;">투고 메모</label>
+                <input type="text" class="form-control" style="padding:5px 8px; font-size:0.78rem;" placeholder="예: 1~30화 시놉 투고, 2주 뒤 확인 예정" value="${esc(memo)}" onchange='updateProjectSubmission(${pid}, "submissionMemo", this.value)'>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     function exportContractsToCSV() {
@@ -3182,8 +3725,7 @@ html { font-size: 19px; }
         stockSub.textContent = '비축 미입력 시 미표시';
       }
     }
-
-    function renderLaunchCountdownBox(cur) {
+function renderLaunchCountdownBox(cur) {
       const box = document.getElementById('launchCountdownBox');
       if (!box || !cur) {
         if (box) box.style.display = 'none';
@@ -3329,7 +3871,6 @@ html { font-size: 19px; }
 
         const hasSerialPlan = proj.phases && proj.phases.length > 0;
 
-        // 연재 구간이 없는 작품은 '완고 작업' 모드로 판단 (마감일 기준 페이스 계산)
         if (hasSerialPlan && (isPreLaunch || isUndecidedLaunch)) {
           statusClass = 'prep';
           const completion = calculateProjectedTargetStockCompletion(proj);
@@ -3479,7 +4020,6 @@ html { font-size: 19px; }
           }
         }
 
-        // 하단 표시: 내 목표 마감 → 출판사 마감 → D-Day 순으로 우선, 없을 때만 런칭일
         let bottomInfoText = '마감일 미설정';
         const makeDTag = (dateStr) => {
           const diff = getDiffDays(dateStr, today);
@@ -3498,7 +4038,7 @@ html { font-size: 19px; }
             <div class="pace-card-top">
               <div>
                 <span class="pace-card-title">${proj.title}</span>
-                <span style="font-size:0.7rem; color:var(--text-muted); margin-left:4px;">${ct ? `(${ct.publisher})` : ''}</span>
+                <span style="font-size:0.7rem; color:var(--text-muted); margin-left:4px;">${ct ? `(${ct.publisher})` : '(미계약)'}</span>
               </div>
               <span class="pace-badge ${statusClass}">${badgeText}</span>
             </div>
@@ -3794,7 +4334,7 @@ html { font-size: 19px; }
         return;
       }
 
-      if (!confirm(`[${dateStr}] ${cumulativeEp}화까지 업로드를 완료 처리하시겠습니까?\n\n• 시작 직전 회차: ${cumulativeEp}화로 자동 변경\n• 현재 비축분: ${epCount}화 자동 차감`)) return;
+      if (!confirm(`[${dateStr}] ${cumulativeEp}화까지 업로드를 완료 처리하시겠습니까?\n\n• 시작 직전 회차: ${cumulativeEp}화로 자동 변경\n• 현재 비축분: ${epCount}화 자동 차감\n• 퇴고 격자에 ${cumulativeEp}화까지 업로드(✓) 표시 자동 반영`)) return;
 
       document.getElementById('startPrevEp').value = cumulativeEp;
       const curStock = parseInt(document.getElementById('stockpile').value) || 0;
@@ -3804,6 +4344,7 @@ html { font-size: 19px; }
       calculateSchedule();
       renderTodayBriefing();
       renderPaceRadar();
+      renderRevisionPanel();
     }
 
     function checkBackupReminder() {
@@ -3933,7 +4474,15 @@ html { font-size: 19px; }
         currentProjectId: currentProjectId,
         contracts: contracts
       };
-      localStorage.setItem('archiveStudioMultiProjectData_v3', JSON.stringify(bundle));
+      try {
+        localStorage.setItem('archiveStudioMultiProjectData_v3', JSON.stringify(bundle));
+      } catch (err) {
+        console.error('저장 실패:', err);
+        if (!window.__archiveSaveWarned) {
+          window.__archiveSaveWarned = true;
+          alert('⚠️ 이 환경에서는 브라우저 저장이 막혀 있어 변경 내용이 저장되지 않습니다.\n크롬·엣지 등 일반 브라우저에서 파일이나 배포 주소를 직접 열어 주세요.');
+        }
+      }
     }
 
     function loadSavedData() {
@@ -3944,6 +4493,11 @@ html { font-size: 19px; }
           projects = bundle.projects || [];
           projects.forEach(p => {
             if (!p.writingPhases) p.writingPhases = [];
+            if (!p.revisionStatus) p.revisionStatus = {};
+            if (!p.submissionStatus) p.submissionStatus = '투고 준비';
+            if (p.submissionPublisher === undefined) p.submissionPublisher = '';
+            if (p.submissionDate === undefined) p.submissionDate = '';
+            if (p.submissionMemo === undefined) p.submissionMemo = '';
           });
           currentProjectId = bundle.currentProjectId;
           contracts = bundle.contracts || [];
@@ -3992,6 +4546,50 @@ html { font-size: 19px; }
       link.click();
       document.body.removeChild(link);
     }
+    function checkVersionUpdate() {
+      const savedVersion = localStorage.getItem('archiveStudio_version');
+      const hasProjects = projects.length > 0;
+
+      if (!savedVersion) {
+        localStorage.setItem('archiveStudio_version', APP_VERSION);
+        return;
+      }
+
+      if (savedVersion !== APP_VERSION) {
+        if (hasProjects) {
+          openUpdateModal();
+        } else {
+          localStorage.setItem('archiveStudio_version', APP_VERSION);
+        }
+      }
+    }
+
+    function openUpdateModal() {
+      const content = document.getElementById('updateNotesContent');
+      if (!content) return;
+
+      content.innerHTML = UPDATE_NOTES.map(item => `
+        <div style="background:var(--card-sub-bg); padding:10px 12px; border-radius:8px; border:1px solid var(--border-light);">
+          <div style="font-weight:800; color:var(--primary-accent); margin-bottom:4px; display:flex; justify-content:space-between;">
+            <span>${item.version}</span>
+            <span style="font-size:0.7rem; color:var(--text-muted); font-weight:normal;">${item.date}</span>
+          </div>
+          <ul style="padding-left:16px; margin:0; display:flex; flex-direction:column; gap:3px;">
+            ${item.notes.map(n => `<li>${n}</li>`).join('')}
+          </ul>
+        </div>
+      `).join('');
+
+      document.getElementById('updateModal').style.display = 'flex';
+    }
+
+    function closeUpdateModal() {
+      localStorage.setItem('archiveStudio_version', APP_VERSION);
+      document.getElementById('updateModal').style.display = 'none';
+    }
+
+    window.openUpdateModal = openUpdateModal;
+    window.closeUpdateModal = closeUpdateModal;
   </script>
   <div style="text-align:center; font-size:0.9rem; color:var(--text-muted); padding:24px 0;">제작: 제미나이를 12시간 동안 마구 때린 자담 (@jadam60177) <br>재배포 시 출처만 가볍게 기재해 주세요. 모든 작가님들의 집필을 응원합니다♥</div>
 </body>
