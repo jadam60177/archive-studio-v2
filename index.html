@@ -6815,5 +6815,218 @@ function renderLaunchCountdownBox(cur) {
       render(false);
     })();
   </script>
+  <!-- ===== 작가 업적 배지 ===== -->
+  <style>
+    #bdBox { grid-column: 1 / -1; }
+    #bdBox .bd-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    #bdBox .bd-top h3 { font-size: 1.05rem; font-weight: 900; margin: 0; }
+    #bdBox .bd-total { height: 10px; background: var(--card-sub-bg); border: 1px solid var(--border-light); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+    #bdBox .bd-total div { height: 100%; background: linear-gradient(90deg, #f3d27a, #e0a526); }
+    #bdBox .bd-tabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+    #bdBox .bd-tabs button { border: 1px solid var(--border-light); background: var(--card-sub-bg); border-radius: 14px; padding: 4px 11px; font: inherit; font-size: 0.74rem; font-weight: 800; color: var(--text-muted); cursor: pointer; }
+    #bdBox .bd-tabs button.on { background: var(--primary); border-color: var(--primary); color: #f4efe4; }
+    #bdBox .bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
+    #bdBox .bd { position: relative; text-align: center; border-radius: 12px; padding: 10px 6px 9px; background: var(--card-sub-bg); border: 1.5px solid var(--border-light); }
+    #bdBox .bd .ic { font-size: 1.6rem; line-height: 1.2; }
+    #bdBox .bd .nm { font-size: 0.76rem; font-weight: 900; margin-top: 3px; word-break: keep-all; }
+    #bdBox .bd .ds { font-size: 0.66rem; color: var(--text-muted); margin-top: 2px; line-height: 1.35; word-break: keep-all; }
+    #bdBox .bd.lock .ic { filter: grayscale(1); opacity: 0.35; }
+    #bdBox .bd.lock .nm { color: var(--text-muted); }
+    #bdBox .bd.got { border-color: #f3d27a; background: #fffaf0; }
+    body.dark-mode #bdBox .bd.got { background: #2a2618; border-color: #8a7236; }
+    #bdBox .bd.secret .ic { filter: none; opacity: 0.5; }
+    #bdBox .bd .new { position: absolute; top: 5px; right: 5px; font-size: 0.56rem; font-weight: 900; color: #fff; background: #e58fa8; border-radius: 6px; padding: 1px 4px; }
+    #bdBox .bd .pg { height: 4px; background: var(--border-light); border-radius: 3px; overflow: hidden; margin-top: 5px; }
+    #bdBox .bd .pg div { height: 100%; background: var(--primary-accent); }
+  </style>
+  <script>
+    (function () {
+      const view = document.getElementById('viewTree');
+      const wrap = view && view.querySelector('.wt-wrap');
+      if (!wrap || document.getElementById('bdBox')) return;
+      const SEEN = 'archiveStudio_badgesSeen', GP = 'archiveStudio_gachaPulls', GS = 'archiveStudio_gachaSSR';
+      const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const ls = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+      const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+
+      /* 가챠 횟수 기록 (소재 가챠 탭이 있을 때만) */
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest || !e.target.closest('#gcPull')) return;
+        lsSet(GP, (ls(GP, 0) || 0) + 1);
+        setTimeout(() => { const r = document.getElementById('gcRare'); if (r && r.classList.contains('show')) lsSet(GS, (ls(GS, 0) || 0) + 1); }, 1500);
+      }, true);
+
+      function stats() {
+        const P = projects || [], C = contracts || [];
+        const today = formatDate(getTodayMidnight());
+        let total = parseInt(ls('archiveStudio_treeBase', 0), 10) || 0;
+        const dayC = {}, dayM = {}, monC = {}, dates = new Set(), hours = [];
+        let mins = 0, logs = 0;
+        P.forEach((p) => {
+          const cpe = parseInt(p.charsPerEp, 10) || 5500;
+          (p.writingLogs || []).forEach((l) => {
+            if (!l.date) return;
+            const n = (parseInt(l.count, 10) || 0) * cpe, m = parseInt(l.duration, 10) || 0;
+            total += n; mins += m;
+            if (m > 0) dayM[l.date] = (dayM[l.date] || 0) + m;
+            if (n > 0) {
+              logs++; dates.add(l.date);
+              dayC[l.date] = (dayC[l.date] || 0) + n;
+              monC[l.date.slice(0, 7)] = (monC[l.date.slice(0, 7)] || 0) + n;
+              const hm = String(l.time || '').split(':');
+              hours.push({ d: l.date, h: parseInt(hm[0], 10), mi: parseInt(hm[1], 10), dow: new Date(l.date + 'T00:00:00').getDay() });
+            }
+          });
+        });
+        const sorted = [...dates].sort();
+        let best = 0, run = 0, prev = null;
+        sorted.forEach((d) => { const c = new Date(d + 'T00:00:00'); run = prev && Math.round((c - prev) / 86400000) === 1 ? run + 1 : 1; best = Math.max(best, run); prev = c; });
+        const daysIn = (ym) => { const [y, m] = ym.split('-').map(Number); return new Date(y, m, 0).getDate(); };
+        const monDays = {}; sorted.forEach((d) => { monDays[d.slice(0, 7)] = (monDays[d.slice(0, 7)] || 0) + 1; });
+        const hrDays = (a, b) => new Set(hours.filter((x) => x.h >= a && x.h < b).map((x) => x.d)).size;
+        const dowDays = (w) => new Set(hours.filter((x) => x.dow === w).map((x) => x.d)).size;
+        const maxEp = Math.max(0, ...P.map((p) => parseInt(p.startPrevEp, 10) || 0));
+        const doneN = P.filter((p) => { const t = parseInt(p.targetEp, 10) || 0; return t > 0 && (parseInt(p.startPrevEp, 10) || 0) >= t; }).length;
+        const spinDone = P.some((p) => { const t = parseInt(p.targetEp, 10) || 0, s = parseInt(p.spinoffEp, 10) || 0; return t > 0 && s > 0 && (parseInt(p.startPrevEp, 10) || 0) >= t + s; });
+        const finals = P.reduce((a, p) => a + Object.values(p.revisionStatus || {}).filter((v) => (v && typeof v === 'object' ? v.stage : v) == 3).length, 0);
+        const files = P.reduce((a, p) => a + (p.fileRevisions || []).length, 0);
+        const filesDone = P.reduce((a, p) => a + (p.fileRevisions || []).filter((f) => f.done).length, 0);
+        const fairy = ls('archiveStudio_fairy', {}) || {};
+        const played = Object.keys(dayM).filter((d) => dayM[d] >= 30);
+        const cared = new Set([...dates, ...played, ...(fairy.bath || [])]).size;
+        const md = (m, d) => sorted.some((x) => x.slice(5) === `${m}-${d}`);
+        return {
+          total, logs, days: dates.size, best, mins,
+          maxDay: Math.max(0, ...Object.values(dayC)), maxMin: Math.max(0, ...Object.values(dayM)),
+          maxMon: Math.max(0, ...Object.values(monC)), maxMonDays: Math.max(0, ...Object.values(monDays)),
+          fullMon: Object.keys(monDays).some((ym) => monDays[ym] >= daysIn(ym)),
+          dawn: hrDays(0, 5), morning: hrDays(5, 9), lunch: hrDays(11, 14), evening: hrDays(18, 22), night: hrDays(22, 24),
+          sat: dowDays(6) + dowDays(0), mon: dowDays(1), friNight: hours.some((x) => x.dow === 5 && x.h >= 20),
+          allDow: [0, 1, 2, 3, 4, 5, 6].every((w) => dowDays(w) > 0),
+          midnight: hours.some((x) => x.h === 0 && x.mi === 0),
+          projects: P.length, target: P.some((p) => parseInt(p.targetEp, 10) > 0), spin: P.some((p) => parseInt(p.spinoffEp, 10) > 0),
+          phases: P.some((p) => (p.phases || []).length), wphases: P.some((p) => (p.writingPhases || []).length),
+          maxEp, doneN, spinDone, finals, files, filesDone,
+          submits: P.filter((p) => p.submissionDate || p.submissionStatus === '투고 중').length,
+          contracts: C.length, published: C.filter((c) => c.publishDate && c.publishDate <= today).length,
+          hiatus: P.some((p) => (p.hiatusDates || []).length), dday: P.some((p) => (p.dDayList || []).length),
+          offday: P.some((p) => (p.writingOffDates || []).length || (Array.isArray(p.writingDays) && p.writingDays.length < 7)),
+          memo: P.some((p) => Object.keys(p.dateMemos || {}).length),
+          fname: Object.values(fairy.names || {}).some(Boolean) || !!fairy.name, cared,
+          pulls: ls(GP, 0) || 0, ssr: ls(GS, 0) || 0,
+          lucky: total >= 777777, xmas: md('12', '25'), newyear: md('01', '01'), halloween: md('10', '31'), leap: md('02', '29')
+        };
+      }
+
+      const B = [];
+      const add = (cat, ic, nm, ds, f, secret) => B.push({ id: `${cat}:${nm}`, cat, ic, nm, ds, f, secret: !!secret });
+      const man = (n) => n >= 10000 ? `${n / 10000}만` : n.toLocaleString();
+      add('글자', '✏️', '첫 발자국', '첫 집필 기록', (s) => [s.logs, 1]);
+      [[10000, '🌱', '새싹 작가'], [100000, '🌸', '첫 꽃'], [300000, '🌿', '무성한 가지'], [500000, '📚', '다섯 권의 무게'], [1000000, '🍎', '백만 자 클럽'], [2000000, '🌳', '이백만 자 숲'], [3000000, '🏔️', '삼백만 자 등반'], [7000000, '🌌', '칠백만 자 은하'], [10000000, '👑', '천만 자의 군주']]
+        .forEach(([n, ic, nm]) => add('글자', ic, nm, `누적 ${man(n)} 자`, (s) => [s.total, n]));
+      [[5000, '☕', '한 화 완성'], [10000, '🔥', '하루 1만 자'], [20000, '🔥', '하루 2만 자'], [40000, '🚀', '하루 4만 자'], [50000, '⚡', '광기의 손가락'], [100000, '🐉', '전설의 하루']]
+        .forEach(([n, ic, nm]) => add('하루', ic, nm, `하루에 ${man(n)} 자`, (s) => [s.maxDay, n]));
+      [[3, '🔗', '작심삼일 돌파'], [7, '📅', '일주일 개근'], [30, '📆', '한 달 개근'], [100, '💯', '백일의 기적'], [200, '🏆', '200일 개근'], [365, '🌞', '1년 개근']]
+        .forEach(([n, ic, nm]) => add('연속', ic, nm, `${n}일 연속 기록`, (s) => [s.best, n]));
+      [[10, '📝', '열흘의 기록'], [30, '📓', '서른 날의 기록'], [100, '📔', '백 날의 기록'], [365, '🗂️', '일 년 치 기록'], [1000, '🏛️', '천 일의 기록']]
+        .forEach(([n, ic, nm]) => add('누적일', ic, nm, `집필한 날 총 ${n}일`, (s) => [s.days, n]));
+      [[60, '⏱️', '첫 한 시간'], [600, '⏳', '열 시간 집중'], [3000, '🪑', '쉰 시간 착석'], [6000, '⌛', '백 시간의 마법사'], [18000, '🧙', '삼백 시간의 현자'], [60000, '🗿', '천 시간의 석상']]
+        .forEach(([n, ic, nm]) => add('시간', ic, nm, `누적 작업 ${n / 60}시간`, (s) => [s.mins, n]));
+      [[60, '🍵', '한 시간 몰입'], [180, '🪑', '엉덩이 무거운 작가'], [480, '💼', '풀타임 작가'], [720, '🌗', '열두 시간의 사투']]
+        .forEach(([n, ic, nm]) => add('시간', ic, nm, `하루 작업 ${n / 60}시간`, (s) => [s.maxMin, n]));
+      add('시간대', '🌙', '새벽 집필러', '새벽 0~5시에 기록', (s) => [s.dawn, 1]);
+      add('시간대', '🦉', '새벽의 단골', '새벽 기록 10일', (s) => [s.dawn, 10]);
+      add('시간대', '☀️', '아침형 작가', '아침 5~9시에 기록', (s) => [s.morning, 1]);
+      add('시간대', '🐓', '아침의 단골', '아침 기록 10일', (s) => [s.morning, 10]);
+      add('시간대', '🍱', '점심시간 작가', '점심 11~14시에 기록', (s) => [s.lunch, 1]);
+      add('시간대', '🌆', '퇴근 후 작가', '저녁 18~22시에 기록', (s) => [s.evening, 1]);
+      add('시간대', '🌃', '올빼미 작가', '밤 22~24시에 기록', (s) => [s.night, 1]);
+      add('요일', '🛋️', '주말 작가', '주말에 기록 10일', (s) => [s.sat, 10]);
+      add('요일', '😵', '월요병 극복', '월요일에 기록 10일', (s) => [s.mon, 10]);
+      add('요일', '🍻', '불금 집필', '금요일 밤 8시 이후 기록', (s) => [s.friNight ? 1 : 0, 1]);
+      add('요일', '🌈', '칠요일 정복', '모든 요일에 기록', (s) => [s.allDow ? 1 : 0, 1]);
+      [[100000, '📈', '한 달 10만 자'], [300000, '📊', '한 달 30만 자'], [500000, '🏅', '한 달 50만 자']]
+        .forEach(([n, ic, nm]) => add('월간', ic, nm, `한 달에 ${man(n)} 자`, (s) => [s.maxMon, n]));
+      add('월간', '🗓️', '성실한 한 달', '한 달에 20일 기록', (s) => [s.maxMonDays, 20]);
+      add('월간', '🌕', '빈틈없는 달', '한 달 동안 매일 기록', (s) => [s.fullMon ? 1 : 0, 1]);
+      [[1, '📖', '첫 작품'], [3, '🎪', '멀티 연재러'], [5, '🎠', '다작의 신']]
+        .forEach(([n, ic, nm]) => add('작품', ic, nm, `작품 ${n}개 등록`, (s) => [s.projects, n]));
+      add('작품', '🎯', '목표가 생겼다', '목표 완결 회차 설정', (s) => [s.target ? 1 : 0, 1]);
+      add('작품', '🎁', '외전 예약', '외전 목표 회차 설정', (s) => [s.spin ? 1 : 0, 1]);
+      add('작품', '🗺️', '연재 설계자', '연재 구간 설정', (s) => [s.phases ? 1 : 0, 1]);
+      add('작품', '🔥', '버닝 주간', '특별 집필 구간 설정', (s) => [s.wphases ? 1 : 0, 1]);
+      [[1, '🚪', '첫 업로드'], [10, '🔟', '10화 돌파'], [50, '🎈', '50화 돌파'], [100, '💯', '100화 돌파'], [200, '🎉', '200화 돌파']]
+        .forEach(([n, ic, nm]) => add('연재', ic, nm, `한 작품 ${n}화 업로드`, (s) => [s.maxEp, n]));
+      add('완결', '🎓', '첫 완결', '작품 1개 완결', (s) => [s.doneN, 1]);
+      add('완결', '🎓', '완결 장인', '작품 3개 완결', (s) => [s.doneN, 3]);
+      add('완결', '👨‍🎓', '완결의 달인', '작품 5개 완결', (s) => [s.doneN, 5]);
+      add('완결', '🎀', '외전까지 완벽', '외전까지 모두 업로드', (s) => [s.spinDone ? 1 : 0, 1]);
+      [[1, '🪄', '첫 최종 퇴고'], [10, '🧹', '퇴고 장인'], [100, '💎', '백 화 광택']]
+        .forEach(([n, ic, nm]) => add('퇴고', ic, nm, `최종 퇴고 ${n}화`, (s) => [s.finals, n]));
+      add('퇴고', '📄', '통파일 등록', '통파일 퇴고 등록', (s) => [s.files, 1]);
+      add('퇴고', '📦', '송부 준비 완료', '통파일 퇴고 완료', (s) => [s.filesDone, 1]);
+      add('퇴고', '🗃️', '퇴고 공장장', '통파일 퇴고 3개 완료', (s) => [s.filesDone, 3]);
+      add('계약', '✉️', '첫 투고', '투고 시작하기', (s) => [s.submits, 1]);
+      add('계약', '📮', '투고의 달인', '3작품 투고', (s) => [s.submits, 3]);
+      add('계약', '🌿', '첫 계약', '계약 등록', (s) => [s.contracts, 1]);
+      add('계약', '🤝', '계약 삼관왕', '계약 3개', (s) => [s.contracts, 3]);
+      add('계약', '📕', '첫 출간', '출간일이 지난 계약 1개', (s) => [s.published, 1]);
+      add('계약', '📚', '책장 한 칸', '출간작 3개', (s) => [s.published, 3]);
+      add('활용', '🏖️', '휴재 선언', '휴재일 지정', (s) => [s.hiatus ? 1 : 0, 1]);
+      add('활용', '⏰', '마감 사수', 'D-Day 등록', (s) => [s.dday ? 1 : 0, 1]);
+      add('활용', '🛌', '나만의 리듬', '집필 요일·쉬는 날 설정', (s) => [s.offday ? 1 : 0, 1]);
+      add('활용', '🗒️', '메모광', '달력에 메모 남기기', (s) => [s.memo ? 1 : 0, 1]);
+      add('요정', '🧚', '이름을 불러 줘', '요정 이름 짓기', (s) => [s.fname ? 1 : 0, 1]);
+      add('요정', '🐣', '아기 요정', '요정과 함께한 날 7일', (s) => [s.cared, 7]);
+      add('요정', '🦋', '어린 요정', '요정과 함께한 날 30일', (s) => [s.cared, 30]);
+      add('요정', '✨', '나무의 수호자', '요정과 함께한 날 100일', (s) => [s.cared, 100]);
+      add('요정', '🏞️', '요정나라 1기 졸업', '요정과 함께한 날 300일', (s) => [s.cared, 300]);
+      add('가챠', '🎰', '첫 가챠', '소재 가챠 1회', (s) => [s.pulls, 1]);
+      add('가챠', '🎲', '가챠 중독', '소재 가챠 50회', (s) => [s.pulls, 50]);
+      add('가챠', '🌟', '금빛 계시', 'SSR 조합 뽑기', (s) => [s.ssr, 1]);
+      add('가챠', '🌠', '선택받은 작가', 'SSR 5번 뽑기', (s) => [s.ssr, 5]);
+      add('숨김', '🍀', '럭키 세븐', '누적 777,777자 돌파', (s) => [s.lucky ? 1 : 0, 1], true);
+      add('숨김', '🕛', '자정의 작가', '밤 12시 정각에 기록', (s) => [s.midnight ? 1 : 0, 1], true);
+      add('숨김', '🎄', '크리스마스에도', '12월 25일에 기록', (s) => [s.xmas ? 1 : 0, 1], true);
+      add('숨김', '🎍', '새해 첫 문장', '1월 1일에 기록', (s) => [s.newyear ? 1 : 0, 1], true);
+      add('숨김', '🎃', '할로윈 집필', '10월 31일에 기록', (s) => [s.halloween ? 1 : 0, 1], true);
+      add('숨김', '🐸', '사 년에 한 번', '2월 29일에 기록', (s) => [s.leap ? 1 : 0, 1], true);
+
+      const box = document.createElement('div');
+      box.id = 'bdBox';
+      box.className = 'wt-box';
+      wrap.appendChild(box);
+      let filter = '전체';
+      const CATS = ['전체', '달성', ...Array.from(new Set(B.map((b) => b.cat)))];
+
+      function render() {
+        const s = stats();
+        const seen = ls(SEEN, []) || [];
+        const rows = B.map((b) => { const [v, g] = b.f(s); return { ...b, got: v >= g, pct: Math.min(100, Math.round((v / g) * 100)) || 0 }; });
+        const got = rows.filter((r) => r.got);
+        const shown = rows.filter((r) => filter === '전체' || (filter === '달성' ? r.got : r.cat === filter));
+        box.innerHTML = `
+          <div class="bd-top"><h3>🏅 작가 업적</h3><strong style="font-size:0.9rem;">${got.length} / ${rows.length}</strong></div>
+          <div class="bd-total"><div style="width:${(got.length / rows.length * 100).toFixed(1)}%"></div></div>
+          <div class="bd-tabs">${CATS.map((c) => `<button type="button" data-c="${esc(c)}" class="${c === filter ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>
+          <div class="bd-grid">${shown.map((r) => {
+            const hide = r.secret && !r.got;
+            return `<div class="bd ${r.got ? 'got' : 'lock'}${hide ? ' secret' : ''}">
+              ${r.got && !seen.includes(r.id) ? '<span class="new">NEW</span>' : ''}
+              <div class="ic">${hide ? '❓' : r.ic}</div>
+              <div class="nm">${hide ? '숨겨진 업적' : esc(r.nm)}</div>
+              <div class="ds">${hide ? '언젠가 알게 될 거예요' : esc(r.ds)}</div>
+              ${r.got || hide ? '' : `<div class="pg"><div style="width:${r.pct}%"></div></div>`}
+            </div>`; }).join('') || '<div class="wt-small">아직 없어요.</div>'}
+          </div>`;
+        setTimeout(() => lsSet(SEEN, got.map((r) => r.id)), 0);
+      }
+      box.addEventListener('click', (e) => { const b = e.target.closest('.bd-tabs button'); if (b) { filter = b.dataset.c; render(); } });
+      const scene = document.getElementById('wtScene');
+      if (scene) new MutationObserver(() => { if (view.classList.contains('active')) render(); }).observe(scene, { childList: true });
+      render();
+      window.__badgeCount = B.length;
+    })();
+  </script>
 </body>
 </html>
