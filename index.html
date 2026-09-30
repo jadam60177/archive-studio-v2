@@ -1885,7 +1885,7 @@
         version: "v10.3",
         date: "2026-09-30",
         notes: [ 
-          "🌳 작가님들의 글자수로 자라나는 세계수가 추가되었어요 !",
+          "🌳 작가님들의 글자수로 자라나는 요정나무가 추가되었어요 !",
 "🧚 집필 기록, 타이머, 업로드 기록으로 자라나는 요정이 추가되었어요 !",
           "⏱️ 이제 집필 계획을 변경할 수 있어요!",
           ]
@@ -6445,7 +6445,7 @@ function renderLaunchCountdownBox(cur) {
               <div class="fy-items">${items.map(([k, label, hint]) => `<div class="${s.items[k] ? 'got' : ''}">${s.items[k] ? label : `🔒 ${hint}`}</div>`).join('')}
                 <div class="got">🦋 날개 색 · 세계수 ${s.treeStage + 1}단계</div>
               </div>
-              <div class="wt-small" style="margin-top:8px;">세계수가 자랄 때마다 날개 색도 달라져요.</div>
+              <div class="wt-small" style="margin-top:8px;">요정나무가 자랄 때마다 날개 색도 달라져요.</div>
             </div>
           </div>
           <div class="fy-grid" style="margin-top:14px; grid-template-columns: minmax(0,1fr) minmax(0,2fr);">
@@ -6455,7 +6455,7 @@ function renderLaunchCountdownBox(cur) {
             </div>
             <div>
               <div class="wt-sec" style="margin-top:0;">📖 요정나라 앨범</div>
-              ${s.album.length ? s.album.map((a) => `<div class="wt-row"><span>${a.gen}기 · ${a.names.map(esc).join(' · ')}</span><span class="wt-small">${esc(a.from)} ~ ${esc(a.to)}</span></div>`).join('') : '<div class="wt-small">세 요정이 모두 세계수 요정이 되면 함께 요정나라로 떠나고, 여기에 추억으로 남아요. 약 300일, 딱 1년 동안의 이야기예요.</div>'}
+              ${s.album.length ? s.album.map((a) => `<div class="wt-row"><span>${a.gen}기 · ${a.names.map(esc).join(' · ')}</span><span class="wt-small">${esc(a.from)} ~ ${esc(a.to)}</span></div>`).join('') : '<div class="wt-small">세 요정이 모두 나무지기 요정이 되면 함께 요정나라로 떠나고, 여기에 추억으로 남아요. 약 300일, 딱 1년 동안의 이야기예요.</div>'}
             </div>
           </div>`;
         box.querySelector('#fyNameSave').addEventListener('click', () => {
