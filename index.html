@@ -6230,5 +6230,182 @@ function renderLaunchCountdownBox(cur) {
       });
     })();
   </script>
+  <!-- ===== 세계수 요정 키우기 ===== -->
+  <style>
+    #wtScene { position: relative; }
+    .fy-overlay { position: absolute; width: 22%; left: 63%; top: 8%; pointer-events: none; animation: fyFloat 3.2s ease-in-out infinite; }
+    .fy-overlay.sleep { animation: none; top: 48%; left: 61%; }
+    .fy-overlay svg { width: 100%; height: auto; overflow: visible; }
+    @keyframes fyFloat { 0%, 100% { transform: translate(0, 0) rotate(-2deg); } 50% { transform: translate(-6px, -12px) rotate(2deg); } }
+    .fy-wing { transform-origin: 50px 52px; animation: fyWing 0.9s ease-in-out infinite; }
+    .fy-overlay.sleep .fy-wing { animation: none; }
+    @keyframes fyWing { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.82); } }
+    .fy-dust { animation: fyDust 2.4s ease-in-out infinite; }
+    @keyframes fyDust { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+    #fyBox { grid-column: 1 / -1; }
+    #fyBox .fy-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    #fyBox .fy-title { font-size: 1.05rem; font-weight: 900; display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    #fyBox .fy-say { background: var(--card-sub-bg); border-radius: 10px; padding: 10px 12px; font-size: 0.82rem; margin: 10px 0; line-height: 1.6; }
+    #fyBox .fy-care { display: flex; flex-direction: column; gap: 6px; }
+    #fyBox .fy-care div { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; padding: 8px 10px; border-radius: 8px; background: var(--card-sub-bg); border: 1px solid var(--border-light); }
+    #fyBox .fy-care div.ok { background: var(--primary-light); border-color: var(--primary-border); color: var(--primary-accent); font-weight: 700; }
+    #fyBox .fy-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    #fyBox .fy-items div { font-size: 0.76rem; padding: 8px; border-radius: 8px; border: 1px dashed var(--border); color: var(--text-muted); text-align: center; }
+    #fyBox .fy-items div.got { border-style: solid; border-color: var(--primary-border); background: var(--primary-light); color: var(--primary-accent); font-weight: 700; }
+    @media (max-width: 860px) { #fyBox .fy-grid { grid-template-columns: 1fr; } }
+  </style>
+  <script>
+    (function () {
+      const view = document.getElementById('viewTree');
+      const scene = document.getElementById('wtScene');
+      if (!view || !scene || document.getElementById('fyBox')) return;
+
+      const KEY = 'archiveStudio_fairy';
+      const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+      const save = (d) => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} };
+      const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const today = () => formatDate(getTodayMidnight());
+      const yesterday = () => { const d = getTodayMidnight(); d.setDate(d.getDate() - 1); return formatDate(d); };
+      const LEVELS = [
+        { at: 0, name: '빛방울', msg: '아직은 작은 빛이에요. 매일 돌봐 주면 날개가 돋아요.' },
+        { at: 7, name: '아기 요정', msg: '작은 날개가 돋았어요!' },
+        { at: 30, name: '어린 요정', msg: '날개를 활짝 펴고 날아다녀요.' },
+        { at: 100, name: '세계수 요정', msg: '세계수를 지키는 요정이 되었어요 ✨' }
+      ];
+
+      /* 씻겨 주기: 올림✓, 퇴고 칸·일괄 변경, 통파일 퇴고 기록을 한 날 */
+      const markBath = () => { const d = load(); d.bath = d.bath || []; const t = today(); if (!d.bath.includes(t)) { d.bath.push(t); d.bath = d.bath.slice(-400); save(d); } };
+      ['markUploadComplete', 'cycleRevisionStatus', 'applyRevisionRange'].forEach((fn) => {
+        if (typeof window[fn] !== 'function') return;
+        const orig = window[fn];
+        window[fn] = function () { const r = orig.apply(this, arguments); markBath(); return r; };
+      });
+      document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#viewRevision button[data-act="save"]')) markBath(); }, true);
+
+      function status() {
+        const fed = new Set(), mins = {}, rest = new Set();
+        (projects || []).forEach((p) => {
+          (p.writingLogs || []).forEach((l) => {
+            if (!l.date) return;
+            if ((parseInt(l.count, 10) || 0) > 0) fed.add(l.date);
+            mins[l.date] = (mins[l.date] || 0) + (parseInt(l.duration, 10) || 0);
+          });
+          (p.hiatusDates || []).forEach((d) => rest.add(d));
+        });
+        const f = load();
+        const bath = new Set(f.bath || []);
+        const played = new Set(Object.keys(mins).filter((d) => mins[d] >= 30));
+        const cared = new Set([...fed, ...played, ...bath]);
+        const t = today(), y = yesterday();
+        const lvIdx = LEVELS.reduce((a, l, i) => (cared.size >= l.at ? i : a), 0);
+        const hungry = !fed.has(t) && !fed.has(y) && !rest.has(t) && cared.size > 0;
+        const treeStage = (() => {
+          let total = 0;
+          try { total = parseInt(localStorage.getItem('archiveStudio_treeBase'), 10) || 0; } catch (e) {}
+          (projects || []).forEach((p) => { const c = parseInt(p.charsPerEp, 10) || 5500; (p.writingLogs || []).forEach((l) => { total += (parseInt(l.count, 10) || 0) * c; }); });
+          return [0, 10000, 200000, 1000000, 3000000, 7000000].reduce((a, v, i) => (total >= v ? i : a), 0);
+        })();
+        const items = {
+          crown: (contracts || []).length > 0,
+          cap: (projects || []).some((p) => { const tgt = parseInt(p.targetEp, 10) || 0; return tgt > 0 && (parseInt(p.startPrevEp, 10) || 0) >= tgt; }),
+          bag: (projects || []).some((p) => p.submissionDate || p.submissionStatus === '투고 중')
+        };
+        return { fedT: fed.has(t), playT: mins[t] || 0, bathT: bath.has(t), restT: rest.has(t), days: cared.size, lvIdx, hungry, treeStage, items, name: f.name || '' };
+      }
+
+      function drawFairy(s) {
+        const lv = s.lvIdx;
+        const wingCols = ['#bfe3ff', '#c8f0d0', '#ffe0a8', '#f5c6e6', '#d9c8ff', '#fff1a8'];
+        const wc = wingCols[s.treeStage] || wingCols[0];
+        const sleep = s.hungry;
+        let g = `<svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">`;
+        g += `<circle cx="50" cy="55" r="${lv === 0 ? 26 : 40}" fill="#fff6c8" opacity="0.45"></circle>`;
+        if (lv === 0) {
+          g += `<circle cx="50" cy="55" r="16" fill="#fff3b0" stroke="#f3d27a" stroke-width="2"></circle>`;
+          g += sleep ? `<path d="M43 55 q3 3 6 0 M51 55 q3 3 6 0" stroke="#6b5a3a" stroke-width="1.6" fill="none"></path>` : `<circle cx="45" cy="54" r="1.8" fill="#6b5a3a"></circle><circle cx="55" cy="54" r="1.8" fill="#6b5a3a"></circle><path d="M46 59 q4 3 8 0" stroke="#6b5a3a" stroke-width="1.4" fill="none"></path>`;
+        } else {
+          const ws = lv === 1 ? 0.6 : lv === 2 ? 0.85 : 1.1;
+          g += `<g class="fy-wing" opacity="0.85"><ellipse cx="${50 - 16 * ws}" cy="${48}" rx="${16 * ws}" ry="${22 * ws}" fill="${wc}" stroke="#ffffff" stroke-width="1.5" transform="rotate(-25 ${50 - 16 * ws} 48)"></ellipse><ellipse cx="${50 + 16 * ws}" cy="${48}" rx="${16 * ws}" ry="${22 * ws}" fill="${wc}" stroke="#ffffff" stroke-width="1.5" transform="rotate(25 ${50 + 16 * ws} 48)"></ellipse>`;
+          if (lv >= 2) g += `<ellipse cx="${50 - 12 * ws}" cy="66" rx="${9 * ws}" ry="${13 * ws}" fill="${wc}" stroke="#ffffff" stroke-width="1.2" transform="rotate(-50 ${50 - 12 * ws} 66)"></ellipse><ellipse cx="${50 + 12 * ws}" cy="66" rx="${9 * ws}" ry="${13 * ws}" fill="${wc}" stroke="#ffffff" stroke-width="1.2" transform="rotate(50 ${50 + 12 * ws} 66)"></ellipse>`;
+          g += `</g>`;
+          g += `<path d="M42 62 L58 62 L63 86 L37 86 Z" fill="#7cc48a"></path><path d="M37 86 q13 5 26 0" fill="#6ab07a"></path>`;
+          g += `<circle cx="50" cy="48" r="13" fill="#ffe3cf"></circle>`;
+          g += `<path d="M37 47 q1 -16 13 -16 q12 0 13 16 q-6 -8 -13 -7 q-7 -1 -13 7z" fill="#b8733f"></path>`;
+          g += sleep ? `<path d="M43 50 q3 3 6 0 M51 50 q3 3 6 0" stroke="#4a3322" stroke-width="1.6" fill="none"></path>` : `<circle cx="45.5" cy="49" r="1.9" fill="#4a3322"></circle><circle cx="54.5" cy="49" r="1.9" fill="#4a3322"></circle><path d="M46.5 54 q3.5 2.5 7 0" stroke="#4a3322" stroke-width="1.4" fill="none"></path>`;
+          g += `<circle cx="42.5" cy="53" r="2.2" fill="#f7a8b8" opacity="0.7"></circle><circle cx="57.5" cy="53" r="2.2" fill="#f7a8b8" opacity="0.7"></circle>`;
+          if (s.items.crown) g += `<path d="M39 36 q11 -8 22 0" stroke="#4f8a4f" stroke-width="3" fill="none"></path><circle cx="41" cy="35" r="2.5" fill="#6fb36f"></circle><circle cx="50" cy="31" r="2.5" fill="#6fb36f"></circle><circle cx="59" cy="35" r="2.5" fill="#6fb36f"></circle>`;
+          if (s.items.cap) g += `<path d="M38 33 L50 27 L62 33 L50 38 Z" fill="#2d3a4a"></path><path d="M60 33 v7" stroke="#f3c34a" stroke-width="1.5"></path>`;
+          if (s.items.bag) g += `<rect x="56" y="70" width="12" height="9" rx="2" fill="#e0a526"></rect><path d="M56 70 l6 5 l6 -5" stroke="#b8801a" stroke-width="1.2" fill="none"></path><path d="M48 62 L60 71" stroke="#b8801a" stroke-width="1.2"></path>`;
+        }
+        if (sleep) g += `<text x="68" y="30" font-size="11" fill="#8aa0b8" font-weight="700">z</text><text x="76" y="20" font-size="14" fill="#8aa0b8" font-weight="700">Z</text>`;
+        else if (s.fedT && s.playT >= 30 && s.bathT) for (let i = 0; i < 6; i++) g += `<circle class="fy-dust" style="animation-delay:${i * 0.35}s" cx="${[18, 82, 26, 76, 50, 12][i]}" cy="${[30, 36, 88, 84, 12, 60][i]}" r="2.4" fill="#fff1a8"></circle>`;
+        return g + `</svg>`;
+      }
+
+      const box = document.createElement('div');
+      box.id = 'fyBox';
+      box.className = 'wt-box';
+      view.querySelector('.wt-wrap').appendChild(box);
+
+      function speech(s, name) {
+        if (s.restT) return `${name}: 오늘은 휴재일! 느긋하게 같이 놀아요 🍃`;
+        if (s.hungry) return `${name}: (나뭇가지에 앉아 꾸벅꾸벅…) 집필 기록 하나만 남겨 주면 금방 일어날게요.`;
+        if (s.fedT && s.playT >= 30 && s.bathT) return `${name}: 오늘 완벽하게 돌봐 줘서 반짝반짝해요! ✨`;
+        if (s.fedT) return `${name}: 오늘 쓴 이야기 맛있었어요! 타이머 켜고 조금만 같이 놀아 줄래요?`;
+        return `${name}: 오늘은 어떤 이야기를 쓸 거예요? 한 줄이라도 기다릴게요.`;
+      }
+
+      function render() {
+        const s = status();
+        const name = s.name || '이름 없는 요정';
+        const L = LEVELS[s.lvIdx], N = LEVELS[s.lvIdx + 1];
+        let ov = scene.querySelector('.fy-overlay');
+        if (!ov) { ov = document.createElement('div'); ov.className = 'fy-overlay'; scene.appendChild(ov); }
+        ov.classList.toggle('sleep', s.hungry);
+        ov.innerHTML = drawFairy(s);
+        const items = [
+          ['crown', '🌿 월계관', '계약을 등록하면'],
+          ['cap', '🎓 졸업 모자', '작품을 완결하면'],
+          ['bag', '✉️ 편지 가방', '투고를 시작하면']
+        ];
+        box.innerHTML = `
+          <div class="fy-grid">
+            <div>
+              <div class="fy-title">🧚 ${esc(name)}</div>
+              <div class="wt-small">${L.name} · 함께한 날 ${s.days}일</div>
+              <div class="fy-say">${esc(speech(s, name))}</div>
+              <div class="wt-small">${N ? `'${N.name}'까지 ${N.at - s.days}일 더 돌봐 주세요` : L.msg}</div>
+              <div class="wt-bar lv"><div style="width:${N ? ((s.days - L.at) / (N.at - L.at) * 100).toFixed(1) : 100}%"></div></div>
+              <div class="wt-base" style="margin-top:10px;">
+                <input type="text" id="fyNameInput" class="form-control" maxlength="12" placeholder="요정 이름 짓기" value="${esc(s.name)}">
+                <button type="button" class="btn-xs" id="fyNameSave" style="font-weight:700;">저장</button>
+              </div>
+            </div>
+            <div>
+              <div class="wt-sec" style="margin-top:0;">오늘의 돌보기</div>
+              <div class="fy-care">
+                <div class="${s.fedT ? 'ok' : ''}"><span>🍚 밥 주기 · 집필 기록 남기기</span><span>${s.fedT ? '완료' : '대기'}</span></div>
+                <div class="${s.playT >= 30 ? 'ok' : ''}"><span>🎾 놀아 주기 · 타이머 30분</span><span>${s.playT >= 30 ? '완료' : `${s.playT}/30분`}</span></div>
+                <div class="${s.bathT ? 'ok' : ''}"><span>🛁 씻겨 주기 · 올림✓ 또는 퇴고</span><span>${s.bathT ? '완료' : '대기'}</span></div>
+              </div>
+              <div class="wt-small" style="margin-top:8px;">셋 중 하나만 해도 함께한 날로 쳐요. 며칠 못 챙겨도 요정은 떠나지 않아요.</div>
+            </div>
+            <div>
+              <div class="wt-sec" style="margin-top:0;">요정의 선물함</div>
+              <div class="fy-items">${items.map(([k, label, hint]) => `<div class="${s.items[k] ? 'got' : ''}">${s.items[k] ? label : `🔒 ${hint}`}</div>`).join('')}
+                <div class="got">🦋 날개 색 · 세계수 ${s.treeStage + 1}단계</div>
+              </div>
+              <div class="wt-small" style="margin-top:8px;">세계수가 자랄 때마다 날개 색도 달라져요.</div>
+            </div>
+          </div>`;
+        box.querySelector('#fyNameSave').addEventListener('click', () => {
+          const d = load(); d.name = box.querySelector('#fyNameInput').value.trim().slice(0, 12); save(d); render();
+        });
+      }
+
+      new MutationObserver(() => { if (!scene.querySelector('.fy-overlay')) render(); }).observe(scene, { childList: true });
+      render();
+    })();
+  </script>
 </body>
 </html>
