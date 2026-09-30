@@ -6276,10 +6276,11 @@ function renderLaunchCountdownBox(cur) {
 
       /* 씻겨 주기: 올림✓, 퇴고 칸·일괄 변경, 통파일 퇴고 기록을 한 날 */
       const markBath = () => { const d = load(); d.bath = d.bath || []; const t = today(); if (!d.bath.includes(t)) { d.bath.push(t); d.bath = d.bath.slice(-400); save(d); } };
+           const snap = () => { const p = getCurrentProject(); return p ? JSON.stringify([p.startPrevEp, p.revisionStatus]) : ''; };
       ['markUploadComplete', 'cycleRevisionStatus', 'applyRevisionRange'].forEach((fn) => {
         if (typeof window[fn] !== 'function') return;
         const orig = window[fn];
-        window[fn] = function () { const r = orig.apply(this, arguments); markBath(); return r; };
+        window[fn] = function () { const before = snap(); const r = orig.apply(this, arguments); if (snap() !== before) markBath(); return r; };
       });
       document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#viewRevision button[data-act="save"]')) markBath(); }, true);
 
