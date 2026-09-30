@@ -6822,7 +6822,7 @@ function renderLaunchCountdownBox(cur) {
       render(false);
     })();
   </script>
- <!-- ===== 작가 업적 배지 ===== -->
+<!-- ===== 작가 업적 배지 ===== -->
   <style>
     #bdBox .wt-small { font-size: 0.76rem; color: var(--text-muted); }
     #bdBox .bd-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -6922,6 +6922,7 @@ function renderLaunchCountdownBox(cur) {
           memo: P.some((p) => Object.keys(p.dateMemos || {}).length),
           fname: Object.values(fairy.names || {}).some(Boolean) || !!fairy.name, cared,
           pulls: ls(GP, 0) || 0, ssr: ls(GS, 0) || 0,
+          treeBase: parseInt(ls('archiveStudio_treeBase', 0), 10) || 0,
           visit: !!ls(VISIT, false), ex: extra(P, hours, dayC, dayM, sorted, total, mins, fairy, best),
           lucky: total >= 777777, xmas: md('12', '25'), newyear: md('01', '01'), halloween: md('10', '31'), leap: md('02', '29')
         };
@@ -7030,6 +7031,20 @@ function renderLaunchCountdownBox(cur) {
       add('요정', '🦋', '어린 요정', '요정과 함께한 날 30일', (s) => [s.cared, 30]);
       add('요정', '✨', '나무의 수호자', '요정과 함께한 날 100일', (s) => [s.cared, 100]);
       add('요정', '🏞️', '요정나라 1기 졸업', '요정과 함께한 날 300일', (s) => [s.cared, 300]);
+      add('나무', '🌱', '싹이 텄어요', '요정나무에 첫 싹 틔우기', (s) => [s.total, 10000]);
+      const T = (ic, nm, ds, f, lv) => add('나무', ic, nm, ds, f, true, lv);
+      T('🌰', '뿌리 내리기', '플래너 쓰기 전 기록 입력', (s) => [s.treeBase > 0 ? 1 : 0, 1], 1);
+      T('🌷', '첫 봉오리', '꽃봉오리 처음 맺기', (s) => [s.total, 10000], 1);
+      T('🌿', '어린 나무', '나무가 어린 나무 단계로', (s) => [s.total, 200000], 1);
+      T('💐', '꽃다발', '꽃 10송이 피우기', (s) => [Math.floor(s.total / 100000), 10], 2);
+      T('🌳', '어엿한 나무', '나무가 나무 단계로', (s) => [s.total, 1000000], 2);
+      T('🍎', '첫 열매', '열매 1개 맺기', (s) => [Math.floor(s.total / 1000000), 1], 2);
+      T('🌲', '우거진 큰 나무', '나무가 큰 나무 단계로', (s) => [s.total, 3000000], 2);
+      T('🌸', '꽃비 내리는 나무', '꽃 50송이 피우기', (s) => [Math.floor(s.total / 100000), 50], 3);
+      T('🧺', '열매 바구니', '열매 5개 맺기', (s) => [Math.floor(s.total / 1000000), 5], 3);
+      T('🏞️', '천년의 나무', '나무가 최종 단계로', (s) => [s.total, 7000000], 3);
+      T('🏵️', '만개', '꽃 100송이 피우기', (s) => [Math.floor(s.total / 100000), 100], 3);
+      T('🍯', '풍년이에요', '열매 10개 맺기', (s) => [Math.floor(s.total / 1000000), 10], 3);
       add('가챠', '🎰', '첫 가챠', '소재 가챠 1회', (s) => [s.pulls, 1]);
       add('가챠', '🎲', '가챠 중독', '소재 가챠 50회', (s) => [s.pulls, 50]);
       add('가챠', '🌟', '금빛 계시', 'SSR 조합 뽑기', (s) => [s.ssr, 1]);
@@ -7078,7 +7093,7 @@ function renderLaunchCountdownBox(cur) {
       H('🌠', '오백 일의 별', '500일 연속 기록', (s) => [s.ex.best500 ? 1 : 0, 1], 3);
       H('🗻', '신화의 하루', '하루에 15만 자', (s) => [s.ex.legend ? 1 : 0, 1], 3);
       H('🏺', '이천만 자의 유산', '누적 2000만 자', (s) => [s.ex.c20m ? 1 : 0, 1], 3);
-      (() => { const hid = B.filter((b) => b.secret).sort((a, b) => a.lv - b.lv); let k = 0; B.forEach((b, i) => { if (b.secret) B[i] = hid[k++]; }); })();
+      (() => { const hid = B.filter((b) => b.cat === '숨김').sort((a, b) => a.lv - b.lv); let k = 0; B.forEach((b, i) => { if (b.cat === '숨김') B[i] = hid[k++]; }); })();
       const treeBtn = [...nav.querySelectorAll('.tab-btn')].find((b) => (b.getAttribute('onclick') || '').includes("'tree'"));
       const guideBtn = [...nav.querySelectorAll('.tab-btn')].find((b) => (b.getAttribute('onclick') || '').includes("'guide'"));
       const tabBtn = document.createElement('button');
@@ -7117,7 +7132,7 @@ function renderLaunchCountdownBox(cur) {
         const seen = ls(SEEN, []) || [];
         const rows = B.map((b) => { const [v, g] = b.f(s); return { ...b, got: v >= g, pct: Math.min(100, Math.round((v / g) * 100)) || 0 }; });
         const got = rows.filter((r) => r.got);
-        const shown = rows.filter((r) => filter === '전체' || (filter === '달성' ? r.got : r.cat === filter));
+        const shown = rows.filter((r) => filter === '전체' || (filter === '달성' ? r.got : filter === '숨김' ? r.secret : r.cat === filter));
         box.innerHTML = `
           <div class="bd-top"><h3>🏅 작가 업적</h3><strong style="font-size:0.9rem;">${got.length} / ${rows.length}</strong></div>
           <div class="bd-total"><div style="width:${(got.length / rows.length * 100).toFixed(1)}%"></div></div>
