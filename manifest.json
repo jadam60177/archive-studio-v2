@@ -1,0 +1,15 @@
+{
+  "name": "ARCHIVE STUDIO — 집필 & 계약 플래너",
+  "short_name": "ARCHIVE STUDIO",
+  "description": "웹소설 작가를 위한 멀티 집필·연재·계약 플래너",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1b3b32",
+  "theme_color": "#1b3b32",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
