@@ -1864,8 +1864,16 @@
   </div>
 
   <script>
-    const APP_VERSION = "v10.3";
-        const UPDATE_NOTES = [  
+    const APP_VERSION = "v11";
+        const UPDATE_NOTES = [      
+          {
+        version: "v11",
+        date: "2026-09-30",
+        notes: [ 
+          "✨ 소재 뽑기 가챠가 추가되었어요.",
+          "로맨스&로판·판타지·BL까지 리디북스 키워드로 구성되었어요."
+          ]
+      },
           {
         version: "v10.3",
         date: "2026-09-30",
@@ -6589,6 +6597,222 @@ function renderLaunchCountdownBox(cur) {
       window.loadCurrentProjectData = loadCurrentProjectData;
       renderBox();
       if (typeof calculateSchedule === 'function') { calculateSchedule(); updateWritingStreak(); }
+    })();
+  </script>
+  <!-- ===== BL 소재 뽑기 가챠 ===== -->
+  <script>
+    /* ▼▼ 장르별 키워드 목록 · 자유롭게 추가·삭제하세요 ▼▼
+       slots: 뽑을 칸 [키워드 종류, 칸 이름], words: 종류별 키워드 */
+    const GACHA_SETS = {
+      'BL': {
+        slots: [['장르', '장르'], ['관계', '관계'], ['공', '공'], ['공', '공 +1'], ['수', '수'], ['수', '수 +1'], ['소재', '소재'], ['분위기', '분위기']],
+        words: {
+          '장르': ['현대물', '시대물', '동양풍', '서양풍', '판타지물', '오메가버스', '가이드버스', '학원/캠퍼스물', '궁정물', '헌터물', '오피스물', '추리/스릴러', '미스터리/오컬트', '연예계'],
+          '관계': ['소꿉친구', '친구>연인', '동거/배우자', '첫사랑', '재회물', '라이벌/열등감', '배틀연애', '애증', '하극상', '계약', '원나잇', '스폰서', '금단의관계', '사제관계', '신분차이', '나이차이', '다공일수', '서브공있음', '리버스'],
+          '공': ['미남공', '미인공', '다정공', '울보공', '대형견공', '순진공', '귀염공', '호구공', '헌신공', '강공', '냉혈공', '무심공', '능글공', '까칠공', '츤데레공', '초딩공', '집착공', '광공', '개아가공', '복흑/계략공', '연하공', '재벌공', '황제공', '후회공', '사랑꾼공', '순정공', '짝사랑공', '상처공', '절륜공', '천재공', '존댓말공'],
+          '수': ['미남수', '병약수', '미인수', '다정수', '순진수', '명랑수', '적극수', '소심수', '잔망수', '허당수', '평범수', '호구수', '헌신수', '강수', '냉혈수', '까칠수', '츤데레수', '외유내강수', '단정수', '무심수', '우월수', '군림수', '유혹수', '계략수', '떡대수', '재벌수', '연상수', '임신수', '순정수', '짝사랑수', '상처수', '굴림수', '도망수', '후회수', '능력수', '얼빠수'],
+          '소재': ['구원', '차원이동/영혼바뀜', '역키잡물', '대학생', '회귀물', '전생/환생', '초능력', '인외존재', '복수', '질투', '오해/착각', '감금', '외국인', '왕족/귀족', '조직/암흑가'],
+          '분위기': ['달달물', '일상물', '힐링물', '코믹/개그물', '잔잔물', '시리어스물', '애절물', '피폐물']
+        }
+      },
+      '로맨스·로판': {
+        slots: [['배경', '배경'], ['관계', '관계'], ['남주', '남주'], ['남주', '남주 +1'], ['여주', '여주'], ['여주', '여주 +1'], ['소재', '소재'], ['분위기', '분위기']],
+        words: {
+          '배경': ['현대물', '가상시대물', '서양풍', '동양풍', '판타지물', '캠퍼스물', '전문직', '연예인', '군대물', '스포츠물', '조직/암흑가', '왕족/귀족'],
+          '관계': ['첫사랑', '재회물', '친구>연인', '라이벌/앙숙', '나이차커플', '계약연애/결혼', '정략결혼', '선결혼후연애', '신분차이', '갑을관계', '사내연애', '비밀연애', '원나잇', '몸정>맘정', '삼각관계', '역하렘', '금단의관계', '동거', '사제지간'],
+          '남주': ['츤데레남', '조신남', '뇌섹남', '능력남', '재벌남', '사이다남', '직진남', '계략남', '능글남', '다정남', '애교남', '유혹남', '절륜남', '집착남', '나쁜남자', '후회남', '상처남', '짝사랑남', '순정남', '까칠남', '냉정남', '무심남', '오만남', '카리스마남', '존댓말남', '대형견남', '연하남', '철벽남', '순진남'],
+          '여주': ['평범녀', '재벌녀', '능력녀', '사이다녀', '직진녀', '계략녀', '능글녀', '다정녀', '애교녀', '유혹녀', '집착녀', '나쁜여자', '후회녀', '상처녀', '짝사랑녀', '순정녀', '철벽녀', '순진녀', '털털녀', '엉뚱녀', '쾌활발랄녀', '외유내강', '까칠녀', '냉정녀', '도도녀', '우월녀', '무심녀', '걸크러시'],
+          '소재': ['영혼체인지/빙의', '게임빙의', '회귀', '환생', '기억상실', '오해', '복수', '권선징악', '소유욕/독점욕/질투', '운명적사랑', '초월적존재', '인외존재', '초능력', '공포/괴담', '신데렐라', '육아물'],
+          '분위기': ['달달물', '로맨틱코미디', '힐링물', '잔잔물', '애잔물', '피폐물', '성장물', '신파', '여주중심', '이야기중심']
+        }
+      },
+      '판타지': {
+        slots: [['장르', '장르'], ['주인공', '주인공'], ['주인공', '주인공 +1'], ['소재', '소재'], ['소재', '소재 +1'], ['분위기', '분위기']],
+        words: {
+          '장르': ['현대판타지', '정통판타지', '퓨전판타지', '무협', '헌터물', '아카데미물', '게임판타지', '대체역사', '스포츠물', '전문직물', '연예계물', '이세계물'],
+          '주인공': ['회귀자', '빙의자', '환생자', '먼치킨', '천재', '노력형', '성장형', '사이다', '계략가', '악역 주인공', '은둔 고수', '재벌 2세', '망나니 공자', '흑막', '착한 주인공', '무심한 주인공'],
+          '소재': ['상태창/시스템', '레벨업', '던전', '게이트', '탑 등반', '성좌', '레이드', '가문 재건', '영지물', '복수', '재벌', '투자/주식', '요리', '전쟁', '마법', '검술', '무공 수련', '계약 소환수', '멸망한 세계', '튜토리얼'],
+          '분위기': ['사이다', '코믹', '힐링', '시리어스', '다크', '피폐', '착각계', '먼치킨 독주']
+        }
+      }
+    };
+    /* ▲▲ 여기까지 ▲▲ */
+  </script>
+  <style>
+    #viewGacha .gc-wrap { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+    #viewGacha .gc-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); padding: 20px 22px; }
+    #viewGacha .gc-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    #viewGacha .gc-head h2 { font-size: 1.2rem; font-weight: 900; margin: 0; }
+    #viewGacha .gc-head p { font-size: 0.78rem; color: var(--text-muted); margin: 4px 0 0; }
+    #viewGacha .gc-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    #viewGacha .gc-slot { position: relative; background: var(--card-sub-bg); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 12px 12px 14px; text-align: center; min-height: 86px; }
+    #viewGacha .gc-slot.locked { border-color: var(--primary-accent); background: var(--primary-light); }
+    #viewGacha .gc-cat { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); letter-spacing: 0.04em; }
+    #viewGacha .gc-val { font-size: 1.08rem; font-weight: 900; margin-top: 8px; color: var(--text-main); word-break: keep-all; }
+    #viewGacha .gc-val.spin { animation: gcSpin 0.08s linear infinite; opacity: 0.6; }
+    @keyframes gcSpin { 0% { transform: translateY(-3px); } 50% { transform: translateY(3px); } 100% { transform: translateY(-3px); } }
+    #viewGacha .gc-lock { position: absolute; top: 6px; right: 6px; border: none; background: none; cursor: pointer; font-size: 0.85rem; opacity: 0.55; }
+    #viewGacha .gc-slot.locked .gc-lock { opacity: 1; }
+    #viewGacha .gc-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+    #viewGacha .gc-pull { flex: 1; min-width: 200px; font-size: 1.05rem; font-weight: 900; padding: 14px; border-radius: 12px; border: none; background: var(--primary); color: #f4efe4; cursor: pointer; }
+    #viewGacha .gc-pull:disabled { opacity: 0.6; cursor: default; }
+    #viewGacha .gc-opt { font-size: 0.78rem; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    #viewGacha .gc-tags { margin-top: 14px; font-size: 0.85rem; font-weight: 700; color: var(--primary-accent); word-break: keep-all; line-height: 1.7; }
+    #viewGacha .gc-rare { display: none; margin-top: 12px; text-align: center; font-weight: 900; font-size: 1rem; color: #b8801a; background: #fff4d6; border: 1.5px solid #f3d27a; border-radius: 10px; padding: 8px; }
+    #viewGacha .gc-rare.show { display: block; }
+    #viewGacha .gc-box.ssr { border-color: #f3d27a; box-shadow: 0 0 0 3px rgba(243,210,122,0.35); }
+    #viewGacha .gc-hist div { display: flex; justify-content: space-between; gap: 10px; font-size: 0.78rem; padding: 7px 0; border-bottom: 1px dashed var(--border-light); word-break: keep-all; }
+    #viewGacha .gc-hist div:last-child { border-bottom: none; }
+    #viewGacha .gc-genres { display: inline-flex; gap: 3px; background: var(--card-sub-bg); border: 1px solid var(--border-light); border-radius: 10px; padding: 3px; margin-bottom: 14px; flex-wrap: wrap; }
+    #viewGacha .gc-genres button { border: none; background: transparent; padding: 7px 16px; border-radius: 8px; font: inherit; font-size: 0.84rem; font-weight: 800; color: var(--text-muted); cursor: pointer; }
+    #viewGacha .gc-genres button.on { background: var(--card-bg); color: var(--primary-accent); box-shadow: var(--shadow-sm); }
+    @media (max-width: 700px) { #viewGacha .gc-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+  <script>
+    (function () {
+      const nav = document.querySelector('.nav-tabs');
+      const guideView = document.getElementById('viewGuide');
+      if (!nav || !guideView || document.getElementById('viewGacha') || typeof GACHA_SETS === 'undefined') return;
+      const GKEY = 'archiveStudio_gachaGenre';
+      let genre = (() => { try { return localStorage.getItem(GKEY); } catch (e) { return null; } })();
+      if (!GACHA_SETS[genre]) genre = Object.keys(GACHA_SETS)[0];
+      const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const pick = (arr, not) => { const pool = arr.filter((x) => !(not || []).includes(x)); return pool[Math.floor(Math.random() * pool.length)] || ''; };
+
+      const guideBtn = [...nav.querySelectorAll('.tab-btn')].find((b) => (b.getAttribute('onclick') || '').includes("'guide'"));
+      const tabBtn = document.createElement('button');
+      tabBtn.className = 'tab-btn';
+      tabBtn.setAttribute('onclick', "switchTab('gacha')");
+      tabBtn.textContent = '🎰 소재 가챠';
+      if (guideBtn) guideBtn.insertAdjacentElement('beforebegin', tabBtn); else nav.appendChild(tabBtn);
+
+      const view = document.createElement('div');
+      view.id = 'viewGacha';
+      view.className = 'tab-view';
+      view.innerHTML = `
+        <div class="gc-wrap">
+          <div class="gc-box" id="gcMain">
+            <div class="gc-head">
+              <div><h2>🎰 소재 뽑기 가챠</h2><p>키워드를 랜덤으로 조합해요. 🔒를 누르면 그 칸은 고정하고 나머지만 다시 뽑아요.</p></div>
+              <div class="gc-opt">
+                <label><input type="checkbox" id="gcTwo" checked> <span id="gcTwoLabel">인물 키워드 2개씩</span></label>
+              </div>
+            </div>
+            <div class="gc-genres" id="gcGenres"></div>
+            <div class="gc-slots" id="gcSlots"></div>
+            <div class="gc-rare" id="gcRare">✨ SSR 조합 등장! 이건 써야 한다는 계시예요 ✨</div>
+            <div class="gc-tags" id="gcTags">버튼을 눌러 오늘의 소재를 뽑아 보세요!</div>
+            <div class="gc-actions">
+              <button type="button" class="gc-pull" id="gcPull">🎰 소재 뽑기</button>
+              <button type="button" class="btn-xs" id="gcCopy" style="font-weight:700; padding:10px 14px;">📋 해시태그 복사</button>
+            </div>
+          </div>
+          <div class="gc-box">
+            <div style="font-size:0.9rem; font-weight:800; margin-bottom:6px;">🗂️ 오늘 뽑은 조합</div>
+            <div class="gc-small" style="font-size:0.74rem; color:var(--text-muted); margin-bottom:6px;">새로고침하면 사라져요. 마음에 드는 조합은 복사해 두세요.</div>
+            <div class="gc-hist" id="gcHist"><div style="color:var(--text-muted);">아직 뽑은 조합이 없어요.</div></div>
+          </div>
+        </div>`;
+      guideView.insertAdjacentElement('beforebegin', view);
+
+      const prevSwitch = switchTab;
+      switchTab = function (tab) {
+        if (tab === 'gacha') {
+          document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+          document.querySelectorAll('.tab-view').forEach((v) => v.classList.remove('active'));
+          tabBtn.classList.add('active');
+          view.classList.add('active');
+          return;
+        }
+        prevSwitch(tab);
+        document.querySelectorAll('.nav-tabs .tab-btn').forEach((b) => {
+          b.classList.toggle('active', (b.getAttribute('onclick') || '').includes(`'${tab}'`));
+        });
+      };
+      window.switchTab = switchTab;
+
+      let SLOTS = GACHA_SETS[genre].slots;
+      let state = SLOTS.map(() => ({ val: '', locked: false }));
+      const hist = [];
+      const two = () => view.querySelector('#gcTwo').checked;
+      const active = () => SLOTS.map((s, i) => i).filter((i) => two() || !/\+1$/.test(SLOTS[i][1]));
+
+      function render(spinning) {
+        view.querySelector('#gcSlots').innerHTML = active().map((i) => `
+          <div class="gc-slot${state[i].locked ? ' locked' : ''}">
+            <button type="button" class="gc-lock" data-i="${i}" aria-label="고정">${state[i].locked ? '🔒' : '🔓'}</button>
+            <div class="gc-cat">${esc(SLOTS[i][1])}</div>
+            <div class="gc-val${spinning && !state[i].locked ? ' spin' : ''}">${esc(state[i].val || '?')}</div>
+          </div>`).join('');
+      }
+      const tags = () => active().map((i) => state[i].val).filter(Boolean).map((v) => '#' + v.replace(/\s+/g, '')).join(' ');
+
+      function roll() {
+        const idx = active();
+        const used = {};
+        idx.forEach((i) => { if (state[i].locked) (used[SLOTS[i][0]] = used[SLOTS[i][0]] || []).push(state[i].val); });
+        idx.forEach((i) => {
+          if (state[i].locked) return;
+          const cat = SLOTS[i][0];
+          state[i].val = pick(GACHA_SETS[genre].words[cat] || [], used[cat]);
+          (used[cat] = used[cat] || []).push(state[i].val);
+        });
+      }
+
+      view.querySelector('#gcPull').addEventListener('click', () => {
+        const btn = view.querySelector('#gcPull');
+        btn.disabled = true;
+        view.querySelector('#gcRare').classList.remove('show');
+        view.querySelector('#gcMain').classList.remove('ssr');
+        let n = 0;
+        const t = setInterval(() => {
+          roll(); render(true); n++;
+          if (n >= 12) {
+            clearInterval(t);
+            roll(); render(false);
+            const ssr = Math.random() < 0.05;
+            view.querySelector('#gcRare').classList.toggle('show', ssr);
+            view.querySelector('#gcMain').classList.toggle('ssr', ssr);
+            view.querySelector('#gcTags').textContent = tags();
+            hist.unshift({ t: tags(), ssr, g: genre });
+            view.querySelector('#gcHist').innerHTML = hist.slice(0, 15).map((h) => `<div><span>${h.ssr ? '✨ ' : ''}${esc(h.t)}</span><span style="color:var(--text-muted); white-space:nowrap;">${esc(h.g)}</span></div>`).join('');
+            btn.disabled = false;
+          }
+        }, 70);
+      });
+
+      view.querySelector('#gcSlots').addEventListener('click', (e) => {
+        const b = e.target.closest('.gc-lock');
+        if (!b) return;
+        const i = parseInt(b.dataset.i, 10);
+        if (!state[i].val) return;
+        state[i].locked = !state[i].locked;
+        render(false);
+      });
+      view.querySelector('#gcTwo').addEventListener('change', () => { render(false); if (state.some((s) => s.val)) view.querySelector('#gcTags').textContent = tags(); });
+      view.querySelector('#gcCopy').addEventListener('click', () => {
+        const txt = tags();
+        if (!txt) { alert('먼저 소재를 뽑아 주세요!'); return; }
+        const done = () => { const b = view.querySelector('#gcCopy'); b.textContent = '✅ 복사됨'; setTimeout(() => { b.textContent = '📋 해시태그 복사'; }, 1400); };
+        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, () => prompt('아래 내용을 복사하세요', txt)); else prompt('아래 내용을 복사하세요', txt);
+      });
+      function renderGenres() {
+        view.querySelector('#gcGenres').innerHTML = Object.keys(GACHA_SETS).map((g) => `<button type="button" data-g="${esc(g)}" class="${g === genre ? 'on' : ''}">${esc(g)}</button>`).join('');
+      }
+      view.querySelector('#gcGenres').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-g]');
+        if (!b || b.dataset.g === genre) return;
+        genre = b.dataset.g;
+        try { localStorage.setItem(GKEY, genre); } catch (err) {}
+        SLOTS = GACHA_SETS[genre].slots;
+        state = SLOTS.map(() => ({ val: '', locked: false }));
+        view.querySelector('#gcTags').textContent = '버튼을 눌러 오늘의 소재를 뽑아 보세요!';
+        view.querySelector('#gcRare').classList.remove('show');
+        view.querySelector('#gcMain').classList.remove('ssr');
+        renderGenres(); render(false);
+      });
+      renderGenres();
+      render(false);
     })();
   </script>
 </body>
