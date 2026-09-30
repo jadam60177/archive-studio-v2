@@ -1159,7 +1159,7 @@
             <div class="panel-collapse-content">
               <div class="form-group">
                 <label>마감 / 일정명</label>
-                <input type="text" id="ddayTitle" class="form-control" placeholder="예: 단행본 1권 마감, 투베 연참일">
+                <input type="text" id="ddayTitle" class="form-control" placeholder="예: 단행본 1권 마감, 연참일">
               </div>
               <div class="form-group">
                 <label>목표 날짜</label>
@@ -1423,7 +1423,7 @@
             <span class="guide-badge">3단계</span>
             <h3>가끔 할 일 (한 번 설정해 두면 되는 것)</h3>
             <p>
-              • <strong>구간 설정:</strong> <strong>+ 새 연재 구간 추가</strong>로 매일·격일·주 5회·투베 연참 방식을 고르고, <strong>+ 구간 추가</strong>로 특별 버닝 주간의 하루 목표치를 지정합니다.<br>
+              • <strong>구간 설정:</strong> <strong>+ 새 연재 구간 추가</strong>로 매일·격일·주 5회·요일 지정·연참 방식을 고르고, <strong>+ 구간 추가</strong>로 특별 버닝 주간의 하루 목표치를 지정합니다.<br>
               • <strong>일정 및 메모:</strong> 달력 날짜를 클릭해 휴재일과 메모를 넣고, <strong>D-Day 추가</strong> 버튼으로 주요 마감 날짜를 등록해 둡니다.<br>
               • <strong>페이스와 통합 달력:</strong> <strong>⚡ 전 작품 마감 페이스 레이더</strong>에서 지연 위험을 점검하고, <strong>🌐 전체 통합 달력</strong> 버튼으로 모든 작품 일정을 한눈에 모아보세요.
             </p>
@@ -1494,7 +1494,7 @@
         <select id="modalPhaseMode" class="form-control">
           <option value="daily">매일 연재</option>
           <option value="every_other">격일 연재 (이틀에 1회)</option>
-          <option value="bomb">투베 폭탄 연참 (한날 일괄 업로드)</option>
+          <option value="bomb">연참 (한날 일괄 업로드)</option>
           <option value="weekdays_5">주 5회 연재 (월~금)</option>
         </select>
       </div>
@@ -1516,7 +1516,7 @@
       </div>
       <div class="form-group">
         <label>구간 명칭 / 메모</label>
-        <input type="text" id="modalWpNote" class="form-control" placeholder="예: 주말 집중 집필, 투베 연참 대비, 버닝 주간">
+        <input type="text" id="modalWpNote" class="form-control" placeholder="예: 주말 집중 집필, 연참 대비, 버닝 주간">
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -2384,7 +2384,7 @@
         hiatusDates: [],
         dateMemos: {},
         dDayList: [
-          { id: Date.now() + 4, title: "투베 연참 개시일", date: formatDate(sampleLaunchDate) }
+          { id: Date.now() + 4, title: "연참 개시일", date: formatDate(sampleLaunchDate) }
         ],
         writingLogs: [
           { id: Date.now() + 5, date: formatDate(today), time: "14:20", count: 2 }
@@ -3508,7 +3508,7 @@
         const modeNames = {
           daily: '매일 연재',
           every_other: '격일 연재',
-          bomb: '투베 폭탄 연참',
+          bomb: '연참',
           weekdays_5: '주 5회(월~금)'
         };
         const epRange = p.endEp === 0 ? `${p.startEp}화 ~ 완결` : `${p.startEp}화 ~ ${p.endEp}화`;
@@ -4289,11 +4289,14 @@
         } else if (phase.mode === 'weekdays_5') {
           if (dayOfWeek >= 1 && dayOfWeek <= 5) isUploadDay = true;
           note = '주 5회 연재';
+            } else if (phase.mode === 'custom_days') {
+          if ((phase.days || []).includes(dayOfWeek)) isUploadDay = true;
+          note = '요일 지정 연재';
         } else if (phase.mode === 'bomb') {
           isUploadDay = true;
           const remainingInPhase = phase.endEp - currentEp;
           episodesToUpload = Math.max(1, remainingInPhase);
-          note = `투베 폭탄 연참 (${episodesToUpload}화)`;
+          note = `연참 (${episodesToUpload}화)`;
         }
 
         if (isUploadDay) {
@@ -5404,7 +5407,7 @@ function renderLaunchCountdownBox(cur) {
 
       const features = [
         ['📅 연재 일정 & 달력', `
-          • <strong>구간별 연재 플랜</strong>에서 <strong>+ 새 연재 구간 추가</strong>로 매일·격일·주 5회·투베 연참 같은 업로드 방식을 기간별로 정할 수 있어요.<br>
+          • <strong>구간별 연재 플랜</strong>에서 <strong>+ 새 연재 구간 추가</strong>로 요일지정·매일·격일·주 5회·연참 같은 업로드 방식을 기간별로 정할 수 있어요.<br>
           • <strong>집필 계획 & 특별 구간</strong>에서는 버닝 주간처럼 특정 기간의 하루 집필 목표를 따로 정해요.<br>
           • 달력 날짜를 누르면 <strong>휴재일</strong>과 메모를 넣을 수 있어요. 휴재일은 연재 계산에서 자동으로 빠져요.<br>
           • 아래 연재 일정표에는 날짜별 업로드 회차, 누적 회차, 남은 비축분이 나오고, 단행본 한 권 분량이 찰 때마다 <strong>권 마감선</strong>이 표시돼요.<br>
@@ -5896,6 +5899,81 @@ function renderLaunchCountdownBox(cur) {
         persist();
         renderRevisionTab();
       });
+    })();
+  </script>
+  <!-- ===== 연재 구간: 요일 지정 연재 ===== -->
+  <style>
+    .dayp-wrap { display: none; margin-top: 8px; }
+    .dayp-wrap.show { display: block; }
+    .dayp { display: flex; gap: 5px; flex-wrap: wrap; }
+    #modalPhaseDaysWrap .dayp label { flex: 1 1 0; min-width: 36px; display: block; margin: 0; padding: 0; cursor: pointer; }
+    #modalPhaseDaysWrap .dayp input { display: none; }
+    #modalPhaseDaysWrap .dayp span { display: block; width: 100%; box-sizing: border-box; text-align: center; padding: 8px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--card-sub-bg); font-size: 0.82rem; font-weight: 800; color: var(--text-muted); user-select: none; }
+    #modalPhaseDaysWrap .dayp input:checked + span { background: var(--primary); border-color: var(--primary); color: #f4efe4; }
+    .dayp-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 5px; }
+  </style>
+  <script>
+    (function () {
+      const sel = document.getElementById('modalPhaseMode');
+      if (!sel || sel.querySelector('option[value="custom_days"]')) return;
+      const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+      const ORDER = [1, 2, 3, 4, 5, 6, 0];
+
+      const opt = document.createElement('option');
+      opt.value = 'custom_days';
+      opt.textContent = '요일 지정 연재 (원하는 요일 선택)';
+      sel.appendChild(opt);
+
+      const wrap = document.createElement('div');
+      wrap.className = 'dayp-wrap';
+      wrap.id = 'modalPhaseDaysWrap';
+      wrap.innerHTML = `<div class="dayp">${ORDER.map((d) => `<label><input type="checkbox" value="${d}"><span>${DAYS[d]}</span></label>`).join('')}</div>
+        <div class="dayp-hint">연재할 요일을 눌러 선택하세요. 예: 월·수·금</div>`;
+      sel.insertAdjacentElement('afterend', wrap);
+
+      const refresh = () => wrap.classList.toggle('show', sel.value === 'custom_days');
+      sel.addEventListener('change', refresh);
+
+      const origOpen = openAddPhaseModal;
+      openAddPhaseModal = function () {
+        wrap.querySelectorAll('input').forEach((i) => { i.checked = false; });
+        origOpen.apply(this, arguments);
+        refresh();
+      };
+      window.openAddPhaseModal = openAddPhaseModal;
+
+      const origSave = savePhaseFromModal;
+      savePhaseFromModal = function () {
+        const cur = getCurrentProject();
+        const isCustom = sel.value === 'custom_days';
+        const days = [...wrap.querySelectorAll('input:checked')].map((i) => parseInt(i.value, 10));
+        if (isCustom && days.length === 0) { alert('연재할 요일을 하나 이상 선택해 주세요.'); return; }
+        const before = cur && cur.phases ? cur.phases.length : 0;
+        origSave.apply(this, arguments);
+        if (isCustom && cur && cur.phases && cur.phases.length > before) {
+          cur.phases[cur.phases.length - 1].days = days.sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+          saveCurrentProjectData();
+          renderPhaseList();
+          calculateSchedule();
+        }
+      };
+      window.savePhaseFromModal = savePhaseFromModal;
+
+      const origList = renderPhaseList;
+      renderPhaseList = function () {
+        origList.apply(this, arguments);
+        const cur = getCurrentProject();
+        const box = document.getElementById('phaseListContainer');
+        if (!cur || !cur.phases || !box) return;
+        const details = box.querySelectorAll('.phase-detail');
+        cur.phases.forEach((p, i) => {
+          if (p.mode === 'custom_days' && details[i]) {
+            details[i].textContent = `요일 지정 (${(p.days || []).map((d) => DAYS[d]).join('·') || '요일 미선택'})`;
+          }
+        });
+      };
+      window.renderPhaseList = renderPhaseList;
+      renderPhaseList();
     })();
   </script>
 </body>
