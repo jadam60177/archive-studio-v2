@@ -6231,7 +6231,7 @@ function renderLaunchCountdownBox(cur) {
       });
     })();
   </script>
-  <!-- ===== 세계수 요정 키우기 ===== -->
+ <!-- ===== 세계수 요정 키우기 ===== -->
   <style>
     #wtScene { position: relative; }
     .fy-overlay { position: absolute; width: 22%; left: 63%; top: 8%; pointer-events: none; animation: fyFloat 3.2s ease-in-out infinite; }
@@ -6297,8 +6297,22 @@ function renderLaunchCountdownBox(cur) {
         const bath = new Set(f.bath || []);
         const played = new Set(Object.keys(mins).filter((d) => mins[d] >= 30));
         const cared = new Set([...fed, ...played, ...bath]);
+        const order = [...cared].sort();
         const t = today(), y = yesterday();
-        const lvIdx = LEVELS.reduce((a, l, i) => (cared.size >= l.at ? i : a), 0);
+        const D = order.length;
+        const idx = Math.floor(D / 100);
+        const gen = Math.floor(idx / 3);
+        const slot = idx % 3;
+        const myDays = D % 100;
+        const lvIdx = LEVELS.reduce((a, l, i) => (myDays >= l.at ? i : a), 0);
+        const dayAt = (n) => order[n - 1] || '';
+        const album = [];
+        for (let g = 0; g < gen; g++) {
+          album.push({ gen: g + 1, names: [0, 1, 2].map((j) => ((f.names || {})[g * 3 + j]) || `요정 ${g * 3 + j + 1}`), from: dayAt(g * 300 + 1), to: dayAt(g * 300 + 300) });
+        }
+        const friends = [];
+        for (let j = 0; j < slot; j++) friends.push({ i: gen * 3 + j, name: ((f.names || {})[gen * 3 + j]) || `요정 ${gen * 3 + j + 1}` });
+        const farewellToday = gen > 0 && slot === 0 && dayAt(gen * 300) === t;
         const hungry = !fed.has(t) && !fed.has(y) && !rest.has(t) && cared.size > 0;
         const treeStage = (() => {
           let total = 0;
@@ -6311,11 +6325,14 @@ function renderLaunchCountdownBox(cur) {
           cap: (projects || []).some((p) => { const tgt = parseInt(p.targetEp, 10) || 0; return tgt > 0 && (parseInt(p.startPrevEp, 10) || 0) >= tgt; }),
           bag: (projects || []).some((p) => p.submissionDate || p.submissionStatus === '투고 중')
         };
-        return { fedT: fed.has(t), playT: mins[t] || 0, bathT: bath.has(t), restT: rest.has(t), days: cared.size, lvIdx, hungry, treeStage, items, name: f.name || '' };
+        const me = gen * 3 + slot;
+        return { fedT: fed.has(t), playT: mins[t] || 0, bathT: bath.has(t), restT: rest.has(t), days: myDays, total: D, lvIdx, hungry, treeStage, items, me, name: ((f.names || {})[me]) || (me === 0 ? (f.name || '') : ''), friends, album, gen, slot, farewellToday };
       }
 
-      function drawFairy(s) {
-        const lv = s.lvIdx;
+      function drawFairy(s, who, lvOverride) {
+        const lv = lvOverride == null ? s.lvIdx : lvOverride;
+        const PAL = [['#b8733f', '#7cc48a', '#6ab07a'], ['#5a4030', '#9ab8e8', '#86a6dc'], ['#e0b45a', '#f0a8c0', '#e493b0']];
+        const [hair, dress, dress2] = PAL[(who || 0) % 3];
         const wingCols = ['#bfe3ff', '#c8f0d0', '#ffe0a8', '#f5c6e6', '#d9c8ff', '#fff1a8'];
         const wc = wingCols[s.treeStage] || wingCols[0];
         const sleep = s.hungry;
@@ -6329,9 +6346,9 @@ function renderLaunchCountdownBox(cur) {
           g += `<g class="fy-wing" opacity="0.85"><ellipse cx="${50 - 16 * ws}" cy="${48}" rx="${16 * ws}" ry="${22 * ws}" fill="${wc}" stroke="#ffffff" stroke-width="1.5" transform="rotate(-25 ${50 - 16 * ws} 48)"></ellipse><ellipse cx="${50 + 16 * ws}" cy="${48}" rx="${16 * ws}" ry="${22 * ws}" fill="${wc}" stroke="#ffffff" stroke-width="1.5" transform="rotate(25 ${50 + 16 * ws} 48)"></ellipse>`;
           if (lv >= 2) g += `<ellipse cx="${50 - 12 * ws}" cy="66" rx="${9 * ws}" ry="${13 * ws}" fill="${wc}" stroke="#ffffff" stroke-width="1.2" transform="rotate(-50 ${50 - 12 * ws} 66)"></ellipse><ellipse cx="${50 + 12 * ws}" cy="66" rx="${9 * ws}" ry="${13 * ws}" fill="${wc}" stroke="#ffffff" stroke-width="1.2" transform="rotate(50 ${50 + 12 * ws} 66)"></ellipse>`;
           g += `</g>`;
-          g += `<path d="M42 62 L58 62 L63 86 L37 86 Z" fill="#7cc48a"></path><path d="M37 86 q13 5 26 0" fill="#6ab07a"></path>`;
+          g += `<path d="M42 62 L58 62 L63 86 L37 86 Z" fill="${dress}"></path><path d="M37 86 q13 5 26 0" fill="${dress2}"></path>`;
           g += `<circle cx="50" cy="48" r="13" fill="#ffe3cf"></circle>`;
-          g += `<path d="M37 47 q1 -16 13 -16 q12 0 13 16 q-6 -8 -13 -7 q-7 -1 -13 7z" fill="#b8733f"></path>`;
+          g += `<path d="M37 47 q1 -16 13 -16 q12 0 13 16 q-6 -8 -13 -7 q-7 -1 -13 7z" fill="${hair}"></path>`;
           g += sleep ? `<path d="M43 50 q3 3 6 0 M51 50 q3 3 6 0" stroke="#4a3322" stroke-width="1.6" fill="none"></path>` : `<circle cx="45.5" cy="49" r="1.9" fill="#4a3322"></circle><circle cx="54.5" cy="49" r="1.9" fill="#4a3322"></circle><path d="M46.5 54 q3.5 2.5 7 0" stroke="#4a3322" stroke-width="1.4" fill="none"></path>`;
           g += `<circle cx="42.5" cy="53" r="2.2" fill="#f7a8b8" opacity="0.7"></circle><circle cx="57.5" cy="53" r="2.2" fill="#f7a8b8" opacity="0.7"></circle>`;
           if (s.items.crown) g += `<path d="M39 36 q11 -8 22 0" stroke="#4f8a4f" stroke-width="3" fill="none"></path><circle cx="41" cy="35" r="2.5" fill="#6fb36f"></circle><circle cx="50" cy="31" r="2.5" fill="#6fb36f"></circle><circle cx="59" cy="35" r="2.5" fill="#6fb36f"></circle>`;
@@ -6349,6 +6366,7 @@ function renderLaunchCountdownBox(cur) {
       view.querySelector('.wt-wrap').appendChild(box);
 
       function speech(s, name) {
+        if (s.farewellToday) return `${name}: 언니 요정들이 오늘 요정나라로 떠났어요. 이제 제가 새로 태어났어요! 잘 부탁해요 🌱`;
         if (s.restT) return `${name}: 오늘은 휴재일! 느긋하게 같이 놀아요 🍃`;
         if (s.hungry) return `${name}: (나뭇가지에 앉아 꾸벅꾸벅…) 집필 기록 하나만 남겨 주면 금방 일어날게요.`;
         if (s.fedT && s.playT >= 30 && s.bathT) return `${name}: 오늘 완벽하게 돌봐 줘서 반짝반짝해요! ✨`;
@@ -6360,10 +6378,20 @@ function renderLaunchCountdownBox(cur) {
         const s = status();
         const name = s.name || '이름 없는 요정';
         const L = LEVELS[s.lvIdx], N = LEVELS[s.lvIdx + 1];
-        let ov = scene.querySelector('.fy-overlay');
-        if (!ov) { ov = document.createElement('div'); ov.className = 'fy-overlay'; scene.appendChild(ov); }
+        scene.querySelectorAll('.fy-overlay').forEach((o) => o.remove());
+        const POS = [['12%', '14%'], ['8%', '46%']];
+        s.friends.forEach((fr, j) => {
+          const o = document.createElement('div');
+          o.className = 'fy-overlay fy-friend' + (s.hungry ? ' sleep' : '');
+          o.style.left = POS[j][0]; o.style.top = s.hungry ? '58%' : POS[j][1]; o.style.width = '19%'; o.style.animationDelay = `${-1.1 * (j + 1)}s`;
+          o.innerHTML = drawFairy(s, fr.i, 3);
+          scene.appendChild(o);
+        });
+        const ov = document.createElement('div');
+        ov.className = 'fy-overlay';
         ov.classList.toggle('sleep', s.hungry);
-        ov.innerHTML = drawFairy(s);
+        ov.innerHTML = drawFairy(s, s.me);
+        scene.appendChild(ov);
         const items = [
           ['crown', '🌿 월계관', '계약을 등록하면'],
           ['cap', '🎓 졸업 모자', '작품을 완결하면'],
@@ -6373,9 +6401,9 @@ function renderLaunchCountdownBox(cur) {
           <div class="fy-grid">
             <div>
               <div class="fy-title">🧚 ${esc(name)}</div>
-              <div class="wt-small">${L.name} · 함께한 날 ${s.days}일</div>
+              <div class="wt-small">${s.gen + 1}기 ${s.slot + 1}번째 요정 · ${L.name} · 함께한 날 ${s.days}일</div>
               <div class="fy-say">${esc(speech(s, name))}</div>
-              <div class="wt-small">${N ? `'${N.name}'까지 ${N.at - s.days}일 더 돌봐 주세요` : L.msg}</div>
+              <div class="wt-small">${N ? `'${N.name}'까지 ${N.at - s.days}일 더 돌봐 주세요` : `${100 - s.days}일 뒤 ${s.slot === 2 ? '세 요정이 함께 요정나라로 떠나고 새 빛방울이 태어나요' : '새 동생 요정이 태어나요'}`}</div>
               <div class="wt-bar lv"><div style="width:${N ? ((s.days - L.at) / (N.at - L.at) * 100).toFixed(1) : 100}%"></div></div>
               <div class="wt-base" style="margin-top:10px;">
                 <input type="text" id="fyNameInput" class="form-control" maxlength="12" placeholder="요정 이름 짓기" value="${esc(s.name)}">
@@ -6398,9 +6426,19 @@ function renderLaunchCountdownBox(cur) {
               </div>
               <div class="wt-small" style="margin-top:8px;">세계수가 자랄 때마다 날개 색도 달라져요.</div>
             </div>
+          </div>
+          <div class="fy-grid" style="margin-top:14px; grid-template-columns: minmax(0,1fr) minmax(0,2fr);">
+            <div>
+              <div class="wt-sec" style="margin-top:0;">🧚 함께 사는 요정</div>
+              ${s.friends.length ? s.friends.map((fr) => `<div class="wt-row"><span>${esc(fr.name)}</span><span class="wt-small">세계수 요정</span></div>`).join('') : '<div class="wt-small">100일을 함께하면 동생 요정이 태어나요. 세 요정이 모두 자라면 함께 요정나라로 떠나요.</div>'}
+            </div>
+            <div>
+              <div class="wt-sec" style="margin-top:0;">📖 요정나라 앨범</div>
+              ${s.album.length ? s.album.map((a) => `<div class="wt-row"><span>${a.gen}기 · ${a.names.map(esc).join(' · ')}</span><span class="wt-small">${esc(a.from)} ~ ${esc(a.to)}</span></div>`).join('') : '<div class="wt-small">세 요정이 모두 세계수 요정이 되면 함께 요정나라로 떠나고, 여기에 추억으로 남아요. 약 300일, 딱 1년 동안의 이야기예요.</div>'}
+            </div>
           </div>`;
         box.querySelector('#fyNameSave').addEventListener('click', () => {
-          const d = load(); d.name = box.querySelector('#fyNameInput').value.trim().slice(0, 12); save(d); render();
+          const d = load(); d.names = d.names || {}; if (d.name && d.names[0] == null) d.names[0] = d.name; d.names[s.me] = box.querySelector('#fyNameInput').value.trim().slice(0, 12); save(d); render();
         });
       }
 
