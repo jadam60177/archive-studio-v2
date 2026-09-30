@@ -6815,9 +6815,9 @@ function renderLaunchCountdownBox(cur) {
       render(false);
     })();
   </script>
-  <!-- ===== 작가 업적 배지 ===== -->
+ <!-- ===== 작가 업적 배지 ===== -->
   <style>
-    #bdBox { grid-column: 1 / -1; }
+    #bdBox .wt-small { font-size: 0.76rem; color: var(--text-muted); }
     #bdBox .bd-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
     #bdBox .bd-top h3 { font-size: 1.05rem; font-weight: 900; margin: 0; }
     #bdBox .bd-total { height: 10px; background: var(--card-sub-bg); border: 1px solid var(--border-light); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
@@ -6841,9 +6841,10 @@ function renderLaunchCountdownBox(cur) {
   </style>
   <script>
     (function () {
-      const view = document.getElementById('viewTree');
-      const wrap = view && view.querySelector('.wt-wrap');
-      if (!wrap || document.getElementById('bdBox')) return;
+      const nav = document.querySelector('.nav-tabs');
+      const guideView = document.getElementById('viewGuide');
+      if (!nav || !guideView || document.getElementById('bdBox')) return;
+      const VISIT = 'archiveStudio_badgeVisit';
       const SEEN = 'archiveStudio_badgesSeen', GP = 'archiveStudio_gachaPulls', GS = 'archiveStudio_gachaSSR';
       const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const ls = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
@@ -6914,12 +6915,53 @@ function renderLaunchCountdownBox(cur) {
           memo: P.some((p) => Object.keys(p.dateMemos || {}).length),
           fname: Object.values(fairy.names || {}).some(Boolean) || !!fairy.name, cared,
           pulls: ls(GP, 0) || 0, ssr: ls(GS, 0) || 0,
+          visit: !!ls(VISIT, false), ex: extra(P, hours, dayC, dayM, sorted, total, mins, fairy, best),
           lucky: total >= 777777, xmas: md('12', '25'), newyear: md('01', '01'), halloween: md('10', '31'), leap: md('02', '29')
         };
       }
 
+      function extra(P, hours, dayC, dayM, sorted, total, mins, fairy, best) {
+        const perDayLogs = {}, projPerDay = {};
+        let maxOneLog = 0, oneEpDay = false;
+        P.forEach((p) => (p.writingLogs || []).forEach((l) => {
+          const n = parseInt(l.count, 10) || 0; if (!l.date || n <= 0) return;
+          perDayLogs[l.date] = (perDayLogs[l.date] || 0) + 1;
+          (projPerDay[l.date] = projPerDay[l.date] || new Set()).add(p.id);
+          maxOneLog = Math.max(maxOneLog, n);
+        }));
+        const epDay = {}; P.forEach((p) => (p.writingLogs || []).forEach((l) => { if (l.date) epDay[l.date] = (epDay[l.date] || 0) + (parseInt(l.count, 10) || 0); }));
+        oneEpDay = Object.values(epDay).some((v) => v === 1);
+        const at = (h, m) => hours.some((x) => x.h === h && x.mi === m);
+        const on = (md) => sorted.some((d) => d.slice(5) === md);
+        const dowOf = (d) => new Date(d + 'T00:00:00').getDay();
+        const lastDay = sorted.some((d) => { const x = new Date(d + 'T00:00:00'); x.setDate(x.getDate() + 1); return x.getDate() === 1; });
+        const weekendPair = sorted.some((d) => { if (dowOf(d) !== 6) return false; const x = new Date(d + 'T00:00:00'); x.setDate(x.getDate() + 1); return sorted.includes(formatDate(x)); });
+        const fri13 = sorted.some((d) => dowOf(d) === 5 && d.slice(8) === '13');
+        const allDay = Object.keys(dayC).some((d) => hours.some((x) => x.d === d && x.h < 6) && hours.some((x) => x.d === d && x.h >= 22));
+        const thinkDay = Object.keys(dayM).some((d) => dayM[d] >= 60 && !dayC[d]);
+        const exactHour = P.some((p) => (p.writingLogs || []).some((l) => parseInt(l.duration, 10) === 60));
+        let run20 = 0, best20 = 0, prev = null;
+        sorted.forEach((d) => { const c = new Date(d + 'T00:00:00'); const ok = (dayC[d] || 0) >= 20000; run20 = ok ? (prev && Math.round((c - prev) / 86400000) === 1 ? run20 + 1 : 1) : 0; best20 = Math.max(best20, run20); prev = c; });
+        const years = {}; sorted.forEach((d) => { years[d.slice(0, 4)] = (years[d.slice(0, 4)] || 0) + 1; });
+        const fullYear = Object.keys(years).some((y) => years[y] >= ((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365));
+        const titles = P.map((p) => String(p.title || '').replace(/\s/g, ''));
+        const perfect = P.some((p) => { const t = (parseInt(p.targetEp, 10) || 0) + (parseInt(p.spinoffEp, 10) || 0); if (t <= 0) return false; const r = p.revisionStatus || {}; for (let i = 1; i <= t; i++) { const v = r[i]; if ((v && typeof v === 'object' ? v.stage : v) != 3) return false; } return true; });
+        const oneYear = P.some((p) => p.startDate && (getTodayMidnight() - new Date(p.startDate + 'T00:00:00')) / 86400000 >= 365);
+        const names = Object.values(fairy.names || {}).filter(Boolean).length + (fairy.name && !(fairy.names || {})[0] ? 1 : 0);
+        const bathSet = new Set(fairy.bath || []);
+        const fullCare = Object.keys(dayC).some((d) => (dayM[d] || 0) >= 30 && bathSet.has(d));
+        return {
+          maxOneLog, oneEpDay, lastDay, firstDay: sorted.some((d) => d.slice(8) === '01'), weekendPair, fri13, allDay, thinkDay, exactHour,
+          t0707: at(7, 7), t1111: at(11, 11), t0333: at(3, 33) || at(15, 33),
+          logs3: Math.max(0, ...Object.values(perDayLogs)), multi2: Math.max(0, ...Object.values(projPerDay).map((x) => x.size)),
+          hangul: on('10-09'), pepero: on('11-11'), valentine: on('02-14'), white: on('03-14'), april: on('04-01'), eve: on('12-24'), yearEnd: on('12-31'), books: on('04-23'),
+          c123456: total >= 123456, c1234567: total >= 1234567, c20m: total >= 20000000,
+          best20, fullYear, longTitle: titles.some((t) => t.length >= 15), shortTitle: titles.some((t) => t.length > 0 && t.length <= 2),
+          perfect, oneYear, names, fullCare, h2000: mins >= 120000, best500: best >= 500, legend: Math.max(0, ...Object.values(dayC)) >= 150000
+        };
+      }
       const B = [];
-      const add = (cat, ic, nm, ds, f, secret) => B.push({ id: `${cat}:${nm}`, cat, ic, nm, ds, f, secret: !!secret });
+      const add = (cat, ic, nm, ds, f, secret, lv) => B.push({ id: `${cat}:${nm}`, cat, ic, nm, ds, f, secret: !!secret, lv: lv || 1 });
       const man = (n) => n >= 10000 ? `${n / 10000}만` : n.toLocaleString();
       add('글자', '✏️', '첫 발자국', '첫 집필 기록', (s) => [s.logs, 1]);
       [[10000, '🌱', '새싹 작가'], [100000, '🌸', '첫 꽃'], [300000, '🌿', '무성한 가지'], [500000, '📚', '다섯 권의 무게'], [1000000, '🍎', '백만 자 클럽'], [2000000, '🌳', '이백만 자 숲'], [3000000, '🏔️', '삼백만 자 등반'], [7000000, '🌌', '칠백만 자 은하'], [10000000, '👑', '천만 자의 군주']]
@@ -6985,21 +7027,85 @@ function renderLaunchCountdownBox(cur) {
       add('가챠', '🎲', '가챠 중독', '소재 가챠 50회', (s) => [s.pulls, 50]);
       add('가챠', '🌟', '금빛 계시', 'SSR 조합 뽑기', (s) => [s.ssr, 1]);
       add('가챠', '🌠', '선택받은 작가', 'SSR 5번 뽑기', (s) => [s.ssr, 5]);
-      add('숨김', '🍀', '럭키 세븐', '누적 777,777자 돌파', (s) => [s.lucky ? 1 : 0, 1], true);
-      add('숨김', '🕛', '자정의 작가', '밤 12시 정각에 기록', (s) => [s.midnight ? 1 : 0, 1], true);
-      add('숨김', '🎄', '크리스마스에도', '12월 25일에 기록', (s) => [s.xmas ? 1 : 0, 1], true);
-      add('숨김', '🎍', '새해 첫 문장', '1월 1일에 기록', (s) => [s.newyear ? 1 : 0, 1], true);
-      add('숨김', '🎃', '할로윈 집필', '10월 31일에 기록', (s) => [s.halloween ? 1 : 0, 1], true);
-      add('숨김', '🐸', '사 년에 한 번', '2월 29일에 기록', (s) => [s.leap ? 1 : 0, 1], true);
+      add('숨김', '🍀', '럭키 세븐', '누적 777,777자 돌파', (s) => [s.lucky ? 1 : 0, 1], true, 2);
+      add('숨김', '🕛', '자정의 작가', '밤 12시 정각에 기록', (s) => [s.midnight ? 1 : 0, 1], true, 2);
+      add('숨김', '🎄', '크리스마스에도', '12월 25일에 기록', (s) => [s.xmas ? 1 : 0, 1], true, 2);
+      add('숨김', '🎍', '새해 첫 문장', '1월 1일에 기록', (s) => [s.newyear ? 1 : 0, 1], true, 2);
+      add('숨김', '🎃', '할로윈 집필', '10월 31일에 기록', (s) => [s.halloween ? 1 : 0, 1], true, 1);
+      add('숨김', '🐸', '사 년에 한 번', '2월 29일에 기록', (s) => [s.leap ? 1 : 0, 1], true, 3);
 
-      const box = document.createElement('div');
-      box.id = 'bdBox';
-      box.className = 'wt-box';
-      wrap.appendChild(box);
+      const H = (ic, nm, ds, f, lv) => add('숨김', ic, nm, ds, f, true, lv);
+      H('📬', '업적 사냥꾼', '업적 탭 처음 열어 보기', (s) => [s.visit ? 1 : 0, 1], 1);
+      H('🍬', '한 화의 소중함', '하루에 딱 1화만 기록한 날', (s) => [s.ex.oneEpDay ? 1 : 0, 1], 1);
+      H('🥞', '한 번에 세 화', '한 번에 3화 이상 기록', (s) => [s.ex.maxOneLog, 3], 1);
+      H('🔁', '들락날락', '하루에 기록 3번 남기기', (s) => [s.ex.logs3, 3], 1);
+      H('🌅', '월초 스타트', '매달 1일에 기록', (s) => [s.ex.firstDay ? 1 : 0, 1], 1);
+      H('🌇', '월말 몰아치기', '매달 마지막 날에 기록', (s) => [s.ex.lastDay ? 1 : 0, 1], 1);
+      H('🛌', '주말 반납', '토요일과 일요일 연달아 기록', (s) => [s.ex.weekendPair ? 1 : 0, 1], 1);
+      H('📛', '제목이 곧 줄거리', '15자 넘는 긴 제목의 작품', (s) => [s.ex.longTitle ? 1 : 0, 1], 1);
+      H('🔤', '두 글자의 미학', '두 글자 이하 제목의 작품', (s) => [s.ex.shortTitle ? 1 : 0, 1], 1);
+      H('🎭', '멀티태스커', '같은 날 두 작품에 기록', (s) => [s.ex.multi2, 2], 1);
+      H('🍀', '럭키 타임', '7시 7분에 기록', (s) => [s.ex.t0707 ? 1 : 0, 1], 2);
+      H('🕚', '소원을 빌어요', '11시 11분에 기록', (s) => [s.ex.t1111 ? 1 : 0, 1], 2);
+      H('🔢', '삼삼한 시간', '3시 33분에 기록', (s) => [s.ex.t0333 ? 1 : 0, 1], 2);
+      H('🔣', '일이삼사오육', '누적 123,456자 돌파', (s) => [s.ex.c123456 ? 1 : 0, 1], 1);
+      H('🎹', '도레미파솔라시', '누적 1,234,567자 돌파', (s) => [s.ex.c1234567 ? 1 : 0, 1], 2);
+      H('🤔', '생각만 한 날', '타이머 1시간 켜고 글은 0자', (s) => [s.ex.thinkDay ? 1 : 0, 1], 1);
+      H('⏲️', '정확히 한 시간', '작업 시간이 딱 60분인 기록', (s) => [s.ex.exactHour ? 1 : 0, 1], 2);
+      H('🧚', '요정 풀코스', '같은 날 밥·놀이·씻기 모두', (s) => [s.ex.fullCare ? 1 : 0, 1], 1);
+      H('👭', '세 자매의 이름', '요정 세 명 이름 짓기', (s) => [s.ex.names, 3], 2);
+      H('📜', '한글날의 작가', '10월 9일에 기록', (s) => [s.ex.hangul ? 1 : 0, 1], 1);
+      H('📘', '책의 날', '4월 23일에 기록', (s) => [s.ex.books ? 1 : 0, 1], 2);
+      H('🍫', '초콜릿보다 원고', '2월 14일에 기록', (s) => [s.ex.valentine ? 1 : 0, 1], 2);
+      H('🍭', '사탕보다 원고', '3월 14일에 기록', (s) => [s.ex.white ? 1 : 0, 1], 2);
+      H('🥢', '과자보다 원고', '11월 11일에 기록', (s) => [s.ex.pepero ? 1 : 0, 1], 1);
+      H('🤡', '거짓말 같은 집필', '4월 1일에 기록', (s) => [s.ex.april ? 1 : 0, 1], 2);
+      H('🔔', '이브의 원고', '12월 24일에 기록', (s) => [s.ex.eve ? 1 : 0, 1], 2);
+      H('🎆', '마지막 날까지', '12월 31일에 기록', (s) => [s.ex.yearEnd ? 1 : 0, 1], 2);
+      H('🔪', '13일의 금요일', '13일의 금요일에 기록', (s) => [s.ex.fri13 ? 1 : 0, 1], 2);
+      H('🏪', '24시간 영업', '같은 날 새벽 6시 전과 밤 10시 후 모두 기록', (s) => [s.ex.allDay ? 1 : 0, 1], 2);
+      H('🔥', '불꽃 일주일', '7일 연속 매일 2만 자 이상', (s) => [s.ex.best20, 7], 3);
+      H('💠', '완벽한 퇴고', '한 작품 전 회차 최종 퇴고', (s) => [s.ex.perfect ? 1 : 0, 1], 3);
+      H('🎂', '연재 1주년', '연재 시작일로부터 1년', (s) => [s.ex.oneYear ? 1 : 0, 1], 3);
+      H('📅', '한 해를 가득', '한 해의 모든 날에 기록', (s) => [s.ex.fullYear ? 1 : 0, 1], 3);
+      H('🌠', '오백 일의 별', '500일 연속 기록', (s) => [s.ex.best500 ? 1 : 0, 1], 3);
+      H('🗻', '신화의 하루', '하루에 15만 자', (s) => [s.ex.legend ? 1 : 0, 1], 3);
+      H('🏺', '이천만 자의 유산', '누적 2000만 자', (s) => [s.ex.c20m ? 1 : 0, 1], 3);
+      (() => { const hid = B.filter((b) => b.secret).sort((a, b) => a.lv - b.lv); let k = 0; B.forEach((b, i) => { if (b.secret) B[i] = hid[k++]; }); })();
+      const treeBtn = [...nav.querySelectorAll('.tab-btn')].find((b) => (b.getAttribute('onclick') || '').includes("'tree'"));
+      const guideBtn = [...nav.querySelectorAll('.tab-btn')].find((b) => (b.getAttribute('onclick') || '').includes("'guide'"));
+      const tabBtn = document.createElement('button');
+      tabBtn.className = 'tab-btn';
+      tabBtn.setAttribute('onclick', "switchTab('badges')");
+      tabBtn.innerHTML = '🏅 업적<span id="bdNewDot"></span>';
+      if (treeBtn) treeBtn.insertAdjacentElement('afterend', tabBtn); else if (guideBtn) guideBtn.insertAdjacentElement('beforebegin', tabBtn); else nav.appendChild(tabBtn);
+      const view = document.createElement('div');
+      view.id = 'viewBadges';
+      view.className = 'tab-view';
+      view.innerHTML = '<div style="max-width:1100px; margin:0 auto;"><div class="wt-box" id="bdBox" style="background:var(--card-bg); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-sm); padding:18px 20px;"></div></div>';
+      guideView.insertAdjacentElement('beforebegin', view);
+      const box = view.querySelector('#bdBox');
+      const prevSwitch = switchTab;
+      switchTab = function (tab) {
+        if (tab === 'badges') {
+          document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+          document.querySelectorAll('.tab-view').forEach((v) => v.classList.remove('active'));
+          tabBtn.classList.add('active');
+          view.classList.add('active');
+          lsSet(VISIT, true);
+          render(true);
+          return;
+        }
+        prevSwitch(tab);
+        document.querySelectorAll('.nav-tabs .tab-btn').forEach((b) => {
+          b.classList.toggle('active', (b.getAttribute('onclick') || '').includes(`'${tab}'`));
+        });
+      };
+      window.switchTab = switchTab;
       let filter = '전체';
       const CATS = ['전체', '달성', ...Array.from(new Set(B.map((b) => b.cat)))];
 
-      function render() {
+      function render(markSeen) {
         const s = stats();
         const seen = ls(SEEN, []) || [];
         const rows = B.map((b) => { const [v, g] = b.f(s); return { ...b, got: v >= g, pct: Math.min(100, Math.round((v / g) * 100)) || 0 }; });
@@ -7015,16 +7121,23 @@ function renderLaunchCountdownBox(cur) {
               ${r.got && !seen.includes(r.id) ? '<span class="new">NEW</span>' : ''}
               <div class="ic">${hide ? '❓' : r.ic}</div>
               <div class="nm">${hide ? '숨겨진 업적' : esc(r.nm)}</div>
-              <div class="ds">${hide ? '언젠가 알게 될 거예요' : esc(r.ds)}</div>
+              <div class="ds">${hide ? `난이도 ${'★'.repeat(r.lv || 1)}${'☆'.repeat(3 - (r.lv || 1))}` : esc(r.ds)}</div>
               ${r.got || hide ? '' : `<div class="pg"><div style="width:${r.pct}%"></div></div>`}
             </div>`; }).join('') || '<div class="wt-small">아직 없어요.</div>'}
           </div>`;
-        setTimeout(() => lsSet(SEEN, got.map((r) => r.id)), 0);
+        const fresh = got.filter((r) => !seen.includes(r.id)).length;
+        const dot = document.getElementById('bdNewDot');
+        if (dot) dot.innerHTML = fresh && !markSeen ? ` <span style="font-size:0.62rem; background:#e58fa8; color:#fff; border-radius:8px; padding:1px 6px; margin-left:3px;">${fresh}</span>` : '';
+        if (markSeen) setTimeout(() => lsSet(SEEN, got.map((r) => r.id)), 0);
       }
-      box.addEventListener('click', (e) => { const b = e.target.closest('.bd-tabs button'); if (b) { filter = b.dataset.c; render(); } });
-      const scene = document.getElementById('wtScene');
-      if (scene) new MutationObserver(() => { if (view.classList.contains('active')) render(); }).observe(scene, { childList: true });
-      render();
+      box.addEventListener('click', (e) => { const b = e.target.closest('.bd-tabs button'); if (b) { filter = b.dataset.c; render(true); } });
+      ['saveData'].forEach((fn) => {
+        if (typeof window[fn] !== 'function') return;
+        const orig = window[fn];
+        let t = null;
+        window[fn] = function () { const r = orig.apply(this, arguments); clearTimeout(t); t = setTimeout(() => render(view.classList.contains('active')), 400); return r; };
+      });
+      render(false);
       window.__badgeCount = B.length;
     })();
   </script>
