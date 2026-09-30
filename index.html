@@ -1071,7 +1071,7 @@
               <div class="panel-toggle-title-area">
                 <span class="panel-toggle-step">MANUSCRIPT REVISION</span>
                 <span class="panel-toggle-heading" style="display:inline-flex; align-items:center; gap:4px;">
-                  회차별 퇴고 현황
+                  퇴고 관리 탭
                   <span class="tip-wrap" onclick="event.stopPropagation()">
                     <span class="tip-icon">?</span>
                     <span class="tip-box">작품 기본 설정의 [목표 완결 회차]를 입력하면 회차 칸이 생성됩니다.<br><br>• 칸 클릭: 초고 → 1차 → 2차 → 최종 순으로 변경<br>• 범위 일괄 변경: 지정 구간 한 번에 적용<br>• 일정표에서 [올림✓] 시 모서리에 체크(✓) 표시</span>
@@ -1393,7 +1393,7 @@
               • <strong>계약된 작품 등록:</strong> <strong>📑 작품 & 계약 관리</strong> 탭에서 <strong>+ 새 계약 등록</strong>을 누르면 스케줄러에 해당 작품이 자동으로 생깁니다.<br>
               • <strong>자유 연재 작품 등록:</strong> 계약서가 없는 작품은 화면 상단의 <strong>+ 새 작품 추가</strong> 버튼을 눌러 직접 이름을 입력해 만듭니다.<br>
               • <strong>기준값 채우기:</strong> <strong>작품 기본 설정 (기준값)</strong>을 열어 회당 글자수, 연재 시작일, 목표 완결 회차를 적고, <strong>현재 원고 & 비축 현황</strong>에 지금 보유한 비축분 회차를 입력해 주세요.<br>
-              • <strong>회차별 퇴고 관리:</strong> <strong>회차별 퇴고 현황</strong> 패널에서 목표 회차 칸을 클릭해 초고부터 송부용 최종까지 실시간으로 진척도를 관리하세요.
+              • <strong>회차별 퇴고 관리:</strong> <strong>퇴고 관리</strong> 패널에서 목표 회차 칸을 클릭해 초고부터 송부용 최종까지 실시간으로 진척도를 관리하세요.
             </p>
           </div>
         </div>
@@ -1864,8 +1864,15 @@
   </div>
 
   <script>
-    const APP_VERSION = "v9.0";
+    const APP_VERSION = "v9.1";
         const UPDATE_NOTES = [
+      {
+        version: "v9.1",
+        date: "2026-09-30",
+        notes: [ 
+          "퇴고 현황을 별도 탭으로 분리해 글자수 단위 퇴고도 체크할 수 있도록 변경되었습니다 ✨"
+          ]
+      },
       {
         version: "v9.0",
         date: "2026-09-30",
@@ -5633,6 +5640,261 @@ function renderLaunchCountdownBox(cur) {
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         target.classList.add('gx-flash');
         setTimeout(() => target.classList.remove('gx-flash'), 1600);
+      });
+    })();
+  </script>
+  <!-- ===== 퇴고 관리 탭 (통파일 퇴고 + 회차별 퇴고) ===== -->
+  <style>
+    #viewRevision .rv-wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+    #viewRevision .rv-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    #viewRevision .rv-top h2 { font-size: 1.15rem; font-weight: 800; margin: 0; }
+    #viewRevision .rv-top p { font-size: 0.8rem; color: var(--text-muted); margin: 4px 0 0; }
+    .rv-seg { display: inline-flex; background: var(--card-sub-bg); border: 1px solid var(--border-light); border-radius: 10px; padding: 3px; gap: 3px; }
+    .rv-seg button { border: none; background: transparent; padding: 7px 14px; border-radius: 8px; font: inherit; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+    .rv-seg button.on { background: var(--card-bg); color: var(--primary-accent); box-shadow: var(--shadow-sm); }
+    .rv-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow-sm); }
+    .rv-box h3 { font-size: 0.95rem; font-weight: 800; margin: 0 0 12px; }
+    .rv-form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 8px; align-items: end; }
+    .rv-form label { display: block; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-bottom: 3px; }
+    .rv-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+    .rv-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-sm); }
+    .rv-card.done { border-color: var(--primary-accent); }
+    .rv-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .rv-card-top h4 { font-size: 0.98rem; font-weight: 800; margin: 0; word-break: break-all; }
+    .rv-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .rv-stages { display: flex; gap: 4px; }
+    .rv-stages span { flex: 1; text-align: center; font-size: 0.7rem; font-weight: 800; padding: 4px 0; border-radius: 6px; background: var(--card-sub-bg); color: var(--text-muted); border: 1px solid var(--border-light); }
+    .rv-stages span.past { background: var(--primary-light); color: var(--primary-accent); border-color: var(--primary-border); }
+    .rv-stages span.now { background: var(--primary); color: #f4efe4; border-color: var(--primary); }
+    .rv-bar { height: 10px; background: var(--card-sub-bg); border: 1px solid var(--border-light); border-radius: 6px; overflow: hidden; }
+    .rv-bar div { height: 100%; background: var(--primary-accent); transition: width .3s; }
+    .rv-nums { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; }
+    .rv-pace { font-size: 0.76rem; background: var(--card-sub-bg); border-radius: 8px; padding: 7px 10px; color: var(--text-main); line-height: 1.5; }
+    .rv-pace.warn { background: var(--amber-light); color: var(--amber); }
+    .rv-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .rv-row input { flex: 1 1 140px; min-width: 0; }
+    #viewRevision #collapsePanelRevision .rev-grid-container { max-height: 480px; }
+    #viewRevision .btn-xs { white-space: nowrap; }
+    .rv-poslabel { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); }
+    @media (max-width: 760px) { .rv-form { grid-template-columns: 1fr 1fr; } .rv-form > div:first-child { grid-column: 1 / -1; } .rv-list { grid-template-columns: 1fr; } }
+  </style>
+  <script>
+    (function () {
+      const nav = document.querySelector('.nav-tabs');
+      const contractsView = document.getElementById('viewContracts');
+      if (!nav || !contractsView || document.getElementById('viewRevision')) return;
+
+      const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const num = (v) => (Number(v) || 0).toLocaleString('ko-KR');
+      const STAGES = ['1차 퇴고', '2차 퇴고', '최종 퇴고'];
+      const todayStr = () => formatDate(getTodayMidnight());
+
+      /* 탭 버튼과 화면 만들기 */
+      const firstBtn = nav.querySelector('.tab-btn');
+      const tabBtn = document.createElement('button');
+      tabBtn.className = 'tab-btn';
+      tabBtn.setAttribute('onclick', "switchTab('revision')");
+      tabBtn.textContent = '✏️ 퇴고 관리';
+      firstBtn.insertAdjacentElement('afterend', tabBtn);
+
+      const view = document.createElement('div');
+      view.id = 'viewRevision';
+      view.className = 'tab-view';
+      view.innerHTML = `
+        <div class="rv-wrap">
+          <div class="rv-top">
+            <div>
+              <h2 id="rvTitle">✏️ 퇴고 관리</h2>
+              <p>통파일로 앞에서부터 쭉 퇴고하는 분도, 회차별로 하는 분도 편한 방식을 고르세요.</p>
+            </div>
+            <div class="rv-seg">
+              <button type="button" data-mode="file">📄 통파일 퇴고</button>
+              <button type="button" data-mode="episode">🔢 회차별 퇴고</button>
+            </div>
+          </div>
+          <div id="rvFileArea">
+            <div class="rv-box" style="margin-bottom:14px;">
+              <h3>새 퇴고 파일 등록</h3>
+              <div class="rv-form">
+                <div><label>파일 이름</label><input type="text" id="rvNewName" class="form-control" placeholder="예: 1권 원고 (1~26화)"></div>
+                <div><label>분량 기준</label><select id="rvNewUnit" class="form-control"><option value="chars">글자 수</option><option value="pages">페이지</option></select></div>
+                <div><label>전체 분량</label><input type="number" id="rvNewTotal" class="form-control" min="1" placeholder="예: 130000"></div>
+                <div><label>마감일 (선택)</label><input type="date" id="rvNewDeadline" class="form-control"></div>
+                <button type="button" class="btn-action btn-primary" id="rvAddBtn" style="width:auto; padding:9px 16px; white-space:nowrap;">+ 등록</button>
+              </div>
+            </div>
+            <div class="rv-list" id="rvList"></div>
+          </div>
+          <div id="rvEpisodeArea"></div>
+        </div>`;
+      contractsView.insertAdjacentElement('afterend', view);
+
+      /* 기존 회차별 퇴고 패널을 이 탭으로 옮기기 (저장 데이터는 그대로) */
+      const epPanel = document.getElementById('collapsePanelRevision');
+      if (epPanel) {
+        view.querySelector('#rvEpisodeArea').appendChild(epPanel);
+        epPanel.classList.add('open');
+      }
+
+      /* 탭 전환: 기존 기능은 그대로 두고 퇴고 탭만 추가 */
+      const originalSwitchTab = switchTab;
+      switchTab = function (tab) {
+        if (tab === 'revision') {
+          document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+          document.querySelectorAll('.tab-view').forEach((v) => v.classList.remove('active'));
+          tabBtn.classList.add('active');
+          view.classList.add('active');
+          renderRevisionTab();
+          return;
+        }
+        originalSwitchTab(tab);
+        document.querySelectorAll('.nav-tabs .tab-btn').forEach((b) => {
+          b.classList.toggle('active', (b.getAttribute('onclick') || '').includes(`'${tab}'`));
+        });
+      };
+      window.switchTab = switchTab;
+
+      const projSel = document.getElementById('projectSelect');
+      if (projSel) projSel.addEventListener('change', () => { if (view.classList.contains('active')) renderRevisionTab(); });
+
+      function curProj() { return getCurrentProject(); }
+      function persist() { saveCurrentProjectData(); saveData(); }
+
+      function renderRevisionTab() {
+        const p = curProj();
+        const title = view.querySelector('#rvTitle');
+        title.textContent = p ? `✏️ 퇴고 관리 · ${p.title}` : '✏️ 퇴고 관리';
+        const mode = (p && p.revisionMode) || 'episode';
+        view.querySelectorAll('.rv-seg button').forEach((b) => b.classList.toggle('on', b.dataset.mode === mode));
+        view.querySelector('#rvFileArea').style.display = mode === 'file' ? '' : 'none';
+        view.querySelector('#rvEpisodeArea').style.display = mode === 'episode' ? '' : 'none';
+        if (mode === 'episode') { if (typeof renderRevisionPanel === 'function') renderRevisionPanel(); return; }
+        renderFileList(p);
+      }
+
+      function renderFileList(p) {
+        const list = view.querySelector('#rvList');
+        if (!p) { list.innerHTML = '<div class="rv-box" style="grid-column:1/-1; text-align:center; color:var(--text-muted); font-size:0.82rem;">먼저 작품을 선택하거나 추가해 주세요.</div>'; return; }
+        const items = p.fileRevisions || [];
+        if (!items.length) { list.innerHTML = '<div class="rv-box" style="grid-column:1/-1; text-align:center; color:var(--text-muted); font-size:0.82rem;">아직 등록된 퇴고 파일이 없어요. 위에서 원고 파일을 등록해 보세요.</div>'; return; }
+        list.innerHTML = items.map((f) => {
+          const unit = f.unit === 'pages' ? '쪽' : '자';
+          const total = Math.max(1, Number(f.total) || 1);
+          const pos = Math.min(total, Math.max(0, Number(f.pos) || 0));
+          const pct = Math.round(pos / total * 100);
+          const done = !!f.done;
+          const stages = STAGES.map((s, i) => `<span class="${done || i < f.stage ? 'past' : (i === f.stage ? 'now' : '')}">${s}</span>`).join('');
+          let pace = '';
+          if (done) {
+            pace = `<div class="rv-pace">📦 최종 퇴고까지 모두 끝났어요. 수고하셨어요!</div>`;
+          } else if (f.deadline) {
+            const left = Math.round((new Date(f.deadline + 'T00:00:00') - getTodayMidnight()) / 86400000);
+            const remainStages = STAGES.length - 1 - f.stage;
+            const remaining = (total - pos) + remainStages * total;
+            if (left < 0) pace = `<div class="rv-pace warn">⚠️ 마감일이 ${-left}일 지났어요. 남은 분량 ${num(remaining)}${unit}</div>`;
+            else {
+              const perDay = Math.ceil(remaining / Math.max(1, left + 1));
+              pace = `<div class="rv-pace${left <= 3 ? ' warn' : ''}">📅 마감까지 D-${left} · 최종까지 남은 분량 ${num(remaining)}${unit}<br>하루 약 <strong>${num(perDay)}${unit}</strong>씩 보면 맞출 수 있어요</div>`;
+            }
+          }
+          const lastLog = (f.log || [])[0];
+          return `
+            <div class="rv-card${done ? ' done' : ''}">
+              <div class="rv-card-top">
+                <div>
+                  <h4>${esc(f.name)}</h4>
+                  <div class="rv-meta">전체 ${num(total)}${unit}${f.deadline ? ` · 마감 ${esc(f.deadline)}` : ''}${lastLog ? ` · 최근 기록 ${esc(lastLog.date)}` : ''}</div>
+                </div>
+                <div class="rv-row" style="flex-wrap:nowrap;">
+                  <button type="button" class="btn-xs" data-act="edit" data-id="${f.id}">수정</button>
+                  <button type="button" class="btn-xs del" data-act="del" data-id="${f.id}">삭제</button>
+                </div>
+              </div>
+              <div class="rv-stages">${stages}</div>
+              <div class="rv-bar"><div style="width:${done ? 100 : pct}%"></div></div>
+              <div class="rv-nums"><span>${done ? '완료' : `${STAGES[f.stage]} 진행 중`}</span><span>${done ? '100%' : `${num(pos)} / ${num(total)}${unit} (${pct}%)`}</span></div>
+              ${pace}
+              ${done ? '' : `
+              <div class="rv-poslabel">오늘 어디까지 봤나요?</div>
+              <div class="rv-row">
+                <input type="number" class="form-control" min="0" max="${total}" placeholder="현재 위치 (${unit})" data-pos="${f.id}">
+                <button type="button" class="btn-xs" data-act="save" data-id="${f.id}" style="font-weight:700;">기록</button>
+                <button type="button" class="btn-xs" data-act="next" data-id="${f.id}" style="font-weight:700; color:var(--primary-accent);">${f.stage >= STAGES.length - 1 ? '✓ 퇴고 완료' : '다음 차수로 →'}</button>
+              </div>`}
+            </div>`;
+        }).join('');
+      }
+
+      view.querySelector('.rv-seg').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-mode]');
+        const p = curProj();
+        if (!b || !p) return;
+        p.revisionMode = b.dataset.mode;
+        persist();
+        renderRevisionTab();
+      });
+
+      view.querySelector('#rvAddBtn').addEventListener('click', () => {
+        const p = curProj();
+        if (!p) { alert('먼저 작품을 선택해 주세요.'); return; }
+        const name = view.querySelector('#rvNewName').value.trim();
+        const total = parseInt(view.querySelector('#rvNewTotal').value, 10);
+        if (!name) { alert('파일 이름을 입력해 주세요.'); return; }
+        if (!total || total < 1) { alert('전체 분량을 1 이상의 숫자로 입력해 주세요.'); return; }
+        if (!p.fileRevisions) p.fileRevisions = [];
+        p.fileRevisions.push({
+          id: Date.now(), name, unit: view.querySelector('#rvNewUnit').value, total,
+          deadline: view.querySelector('#rvNewDeadline').value || '', stage: 0, pos: 0, done: false, log: []
+        });
+        view.querySelector('#rvNewName').value = '';
+        view.querySelector('#rvNewTotal').value = '';
+        view.querySelector('#rvNewDeadline').value = '';
+        persist();
+        renderRevisionTab();
+      });
+
+      view.querySelector('#rvList').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-act]');
+        const p = curProj();
+        if (!b || !p || !p.fileRevisions) return;
+        const f = p.fileRevisions.find((x) => String(x.id) === b.dataset.id);
+        if (!f) return;
+        const unit = f.unit === 'pages' ? '쪽' : '자';
+        const act = b.dataset.act;
+        if (act === 'save') {
+          const input = view.querySelector(`input[data-pos="${f.id}"]`);
+          const v = parseInt(input.value, 10);
+          if (isNaN(v) || v < 0) { alert('0 이상의 숫자를 입력해 주세요.'); return; }
+          f.pos = Math.min(Number(f.total) || v, v);
+          if (!f.log) f.log = [];
+          const t = todayStr();
+          const today = f.log.find((l) => l.date === t && l.stage === f.stage);
+          if (today) today.pos = f.pos; else f.log.unshift({ date: t, stage: f.stage, pos: f.pos });
+        } else if (act === 'next') {
+          if (f.stage >= STAGES.length - 1) {
+            if (!confirm(`'${f.name}' 최종 퇴고를 완료로 표시할까요?`)) return;
+            f.done = true; f.pos = f.total;
+          } else {
+            if (!confirm(`${STAGES[f.stage]}를 마치고 ${STAGES[f.stage + 1]}로 넘어갈까요?\n진행 위치는 처음(0${unit})부터 다시 시작해요.`)) return;
+            f.stage += 1; f.pos = 0;
+          }
+        } else if (act === 'del') {
+          if (!confirm(`'${f.name}' 퇴고 기록을 삭제할까요? 되돌릴 수 없어요.`)) return;
+          p.fileRevisions = p.fileRevisions.filter((x) => x !== f);
+        } else if (act === 'edit') {
+          const name = prompt('파일 이름', f.name);
+          if (name === null) return;
+          const total = prompt(`전체 분량 (${unit})`, f.total);
+          if (total === null) return;
+          const deadline = prompt('마감일 (예: 2026-11-15, 없으면 비워 두세요)', f.deadline || '');
+          if (deadline === null) return;
+          if (name.trim()) f.name = name.trim();
+          if (parseInt(total, 10) > 0) f.total = parseInt(total, 10);
+          f.deadline = /^\d{4}-\d{2}-\d{2}$/.test(deadline.trim()) ? deadline.trim() : '';
+          if (f.pos > f.total) f.pos = f.total;
+        }
+        persist();
+        renderRevisionTab();
       });
     })();
   </script>
