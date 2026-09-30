@@ -5572,5 +5572,65 @@ function renderLaunchCountdownBox(cur) {
       win.addEventListener('pagehide', () => { clearInterval(floatTimerTick); floatTimerTick = null; floatTimerWin = null; });
     }
   </script>
+  <!-- ===== 사용 안내: 한눈에 보는 기능 카드 ===== -->
+  <style>
+    .ov-card { background: var(--card-bg); border: 1px solid var(--border-light); border-radius: 14px; padding: 18px 20px; margin: 18px 0 22px; }
+    .ov-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .ov-head h3 { font-size: 1.02rem; font-weight: 800; margin: 0; color: var(--primary-accent); }
+    .ov-head span { font-size: 0.75rem; color: var(--text-muted); }
+    .ov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+    .ov-cell { text-align: left; background: var(--card-sub-bg); border: 1px solid var(--border-light); border-radius: 10px; padding: 12px 14px; cursor: pointer; font: inherit; color: var(--text-main); transition: border-color .15s, transform .15s; }
+    .ov-cell:hover { border-color: var(--primary-accent); transform: translateY(-1px); }
+    .ov-cell b { display: block; font-size: 0.88rem; font-weight: 800; margin-bottom: 5px; color: var(--primary-accent); }
+    .ov-cell small { display: block; font-size: 0.76rem; line-height: 1.6; color: var(--text-muted); }
+    .ov-cell.ov-hi { background: var(--primary); border-color: var(--primary); }
+    .ov-cell.ov-hi b { color: #f4efe4; }
+    .ov-cell.ov-hi small { color: #e9dfc8; }
+    .gx-item.gx-flash > summary { outline: 2px solid var(--primary-accent); outline-offset: -2px; }
+  </style>
+  <script>
+    (function () {
+      const box = document.querySelector('#viewGuide .guide-container');
+      const hero = box && box.querySelector('.guide-hero');
+      if (!hero || document.getElementById('ovCard')) return;
+
+      const cells = [
+        ['📅 연재 스케줄러', '업로드 일정 자동 계산<br>비축·펑크 경고, 휴재일<br>단행본 마감선, 통합 달력', '연재 일정'],
+        ['✍️ 집필 기록', '+1화·글자 수로 기록<br>집필 챌린지 연속 일수<br>작업 타이머와 미니 창', '집필 일지'],
+        ['📊 월간 결산', '총 분량, 작업 시간<br>시간당 속도, 버닝 데이<br>캡처용 결산 카드', '월간 결산'],
+        ['✏️ 퇴고 관리', '초고부터 최종까지 4단계<br>범위 일괄 변경<br>진행률과 업로드 표시', '퇴고 현황'],
+        ['📑 계약 관리', '미계약·연재 중·출간 완료<br>만료일·해지 통보일 계산<br>진행 단계 체크', '계약 관리'],
+        ['📬 투고 관리', '상태·출판사·투고일 기록<br>40일 경과 누락 알림<br>계약 전환 한 번에', '투고 관리'],
+        ['📲 편의 기능', '앱처럼 설치, 오프라인 실행<br>오늘 브리핑, 페이스 레이더<br>야간 모드, 백업·복원', '앱처럼 설치', true]
+      ];
+
+      hero.insertAdjacentHTML('afterend', `
+        <div class="ov-card" id="ovCard">
+          <div class="ov-head">
+            <h3>✨ 한눈에 보는 기능</h3>
+            <span>칸을 누르면 자세한 설명으로 이동해요</span>
+          </div>
+          <div class="ov-grid">
+            ${cells.map(([t, d, key, hi]) =>
+              `<button type="button" class="ov-cell${hi ? ' ov-hi' : ''}" data-ov="${key}"><b>${t}</b><small>${d}</small></button>`
+            ).join('')}
+          </div>
+        </div>`);
+
+      document.getElementById('ovCard').addEventListener('click', (e) => {
+        const btn = e.target.closest('.ov-cell');
+        if (!btn) return;
+        const search = document.getElementById('gxSearch');
+        if (search && search.value) { search.value = ''; search.dispatchEvent(new Event('input')); }
+        const target = [...document.querySelectorAll('#viewGuide .gx-item')]
+          .find((el) => el.querySelector('summary').textContent.includes(btn.dataset.ov));
+        if (!target) return;
+        target.open = true;
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('gx-flash');
+        setTimeout(() => target.classList.remove('gx-flash'), 1600);
+      });
+    })();
+  </script>
 </body>
 </html>
