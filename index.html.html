@@ -4,6 +4,10 @@
   <link rel="icon" href="favicon-32x32.png" type="image/png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon-32x32.png" type="image/png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1b3b32">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <title>ARCHIVE STUDIO — 멀티 집필 & 계약 플래너</title>
   <style>
     :root {
@@ -5376,6 +5380,14 @@ function renderLaunchCountdownBox(cur) {
     window.openUpdateModal = openUpdateModal;
     window.closeUpdateModal = closeUpdateModal;
   </script>
-  <div style="text-align:center; font-size:0.9rem; color:var(--text-muted); padding:24px 0;">제작: 제미나이를 12시간 동안 마구 때린 자담 (@jadam60177) <br>재배포 시 출처만 가볍게 기재해 주세요. 모든 작가님들의 집필을 응원합니다♥</div>
+  <div style="text-align:center; font-size:0.9rem; color:var(--text-muted); padding:24px 0;">제작: 자담 (@jadam60177) <br>제미나이를 30시간 괴롭혀 제가 원하는 궁극의 플래너를 만들었어요.<br>재배포 시 출처만 가볍게 기재해 주세요. 모든 작가님들의 집필을 응원합니다♥</div>
+
 </body>
+    <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
 </html>
