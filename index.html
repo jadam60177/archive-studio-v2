@@ -843,6 +843,7 @@
                   <button type="button" class="btn-xs" id="timerStartBtn" onclick="startWorkTimer()" style="font-weight:700; background:var(--primary-light); color:var(--primary-accent); border-color:var(--primary-border);">▶ 시작</button>
                   <button type="button" class="btn-xs" id="timerPauseBtn" onclick="pauseWorkTimer()" style="display:none; font-weight:700;">⏸ 일시정지</button>
                   <button type="button" class="btn-xs del" id="timerStopBtn" onclick="stopWorkTimer()" style="display:none; font-weight:700;">⏹ 종료</button>
+                                  <button type="button" class="btn-xs" onclick="openFloatingTimer()" title="타이머를 작은 창으로 띄우기" style="font-weight:700;">🪟</button>
                 </div>
               </div>
             </div>
@@ -5381,13 +5382,78 @@ function renderLaunchCountdownBox(cur) {
     window.closeUpdateModal = closeUpdateModal;
   </script>
   <div style="text-align:center; font-size:0.9rem; color:var(--text-muted); padding:24px 0;">제작: 자담 (@jadam60177) · 재 배포시 가볍게 출처만 남겨주세요 <br> 아카이브 스튜디오를 사용하시는 모든 작가님들의 집필을 응원합니다♥</div>
-
-</body>
-    <script>
+  <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch(() => {});
       });
     }
   </script>
+  <script>
+    /* ===== 타이머 따로 띄우기 (항상 위 미니 창) ===== */
+    let floatTimerWin = null;
+    let floatTimerTick = null;
+
+    async function openFloatingTimer() {
+      if (floatTimerWin && !floatTimerWin.closed) { floatTimerWin.focus(); return; }
+      let win = null;
+      try {
+        if (window.documentPictureInPicture) {
+          win = await documentPictureInPicture.requestWindow({ width: 280, height: 150 });
+        }
+      } catch (e) { win = null; }
+      if (!win) {
+        win = window.open('', 'archiveFloatTimer', 'width=300,height=190');
+        if (!win) { alert('팝업이 차단되어 있어요. 주소창 오른쪽의 팝업 차단 아이콘에서 허용해 주세요.'); return; }
+      }
+      floatTimerWin = win;
+      const d = win.document;
+      d.title = '⏱️ 작업 타이머';
+      d.body.innerHTML = '';
+      const style = d.createElement('style');
+      style.textContent = `
+        html,body{margin:0;height:100%;background:#1b3b32;color:#e9dfc8;font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;}
+        .ft-wrap{display:flex;flex-direction:column;justify-content:center;align-items:center;height:100%;gap:8px;padding:10px;box-sizing:border-box;}
+        .ft-title{font-size:12px;opacity:.8;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        .ft-time{font-size:34px;font-weight:900;letter-spacing:.04em;font-variant-numeric:tabular-nums;}
+        .ft-row{display:flex;gap:6px;}
+        .ft-btn{border:1px solid #e9dfc8;background:transparent;color:#e9dfc8;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;}
+        .ft-btn:hover{background:rgba(233,223,200,.15);}
+        .ft-stop{border-color:#e8a598;color:#e8a598;}`;
+      d.head.appendChild(style);
+      const wrap = d.createElement('div'); wrap.className = 'ft-wrap';
+      const title = d.createElement('div'); title.className = 'ft-title';
+      const time = d.createElement('div'); time.className = 'ft-time'; time.textContent = '00:00:00';
+      const row = d.createElement('div'); row.className = 'ft-row';
+      const bStart = d.createElement('button'); bStart.className = 'ft-btn';
+      const bPause = d.createElement('button'); bPause.className = 'ft-btn'; bPause.textContent = '⏸ 일시정지';
+      const bStop = d.createElement('button'); bStop.className = 'ft-btn ft-stop'; bStop.textContent = '⏹ 종료';
+      bStart.addEventListener('click', () => { startWorkTimer(); refreshFloatingTimer(); });
+      bPause.addEventListener('click', () => { pauseWorkTimer(); refreshFloatingTimer(); });
+      bStop.addEventListener('click', () => { window.focus(); stopWorkTimer(); refreshFloatingTimer(); });
+      row.append(bStart, bPause, bStop);
+      wrap.append(title, time, row);
+      d.body.appendChild(wrap);
+
+      function refreshFloatingTimer() {
+        if (!floatTimerWin || floatTimerWin.closed) { clearInterval(floatTimerTick); floatTimerTick = null; return; }
+        let ms = timerState.accumulatedMs || 0;
+        if (timerState.status === 'running' && timerState.startTime) ms += Date.now() - timerState.startTime;
+        time.textContent = formatTimerDisplay(ms);
+        const cur = getCurrentProject();
+        title.textContent = cur ? '📖 ' + cur.title : '작품을 선택해 주세요';
+        const running = timerState.status === 'running';
+        bStart.textContent = timerState.status === 'paused' ? '▶ 재개' : '▶ 시작';
+        bStart.style.display = running ? 'none' : 'inline-block';
+        bPause.style.display = running ? 'inline-block' : 'none';
+        bStop.style.display = timerState.status === 'stopped' ? 'none' : 'inline-block';
+      }
+      refreshFloatingTimer();
+      clearInterval(floatTimerTick);
+      floatTimerTick = setInterval(refreshFloatingTimer, 1000);
+      win.addEventListener('pagehide', () => { clearInterval(floatTimerTick); floatTimerTick = null; floatTimerWin = null; });
+    }
+  </script>
+</body>
+  
 </html>
