@@ -6027,7 +6027,7 @@ function renderLaunchCountdownBox(cur) {
         { at: 200000, name: '어린 나무', msg: '줄기가 단단해지기 시작했어요.' },
         { at: 1000000, name: '나무', msg: '어엿한 나무가 되었어요.' },
         { at: 3000000, name: '큰 나무', msg: '가지마다 이야기가 주렁주렁해요.' },
-        { at: 7000000, name: '세계수', msg: '수많은 세계를 품은 세계수가 되었어요!' }
+        { at: 7000000, name: '요정나무', msg: '수많은 세계를 품은 요정나무가 되었어요!' }
       ];
       const KEY = 'archiveStudio_treeBase';
       const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -6039,7 +6039,7 @@ function renderLaunchCountdownBox(cur) {
       const tabBtn = document.createElement('button');
       tabBtn.className = 'tab-btn';
       tabBtn.setAttribute('onclick', "switchTab('tree')");
-      tabBtn.textContent = '🌳 세계수';
+      tabBtn.textContent = '🌳 요정나무';
       if (guideBtn) guideBtn.insertAdjacentElement('beforebegin', tabBtn); else nav.appendChild(tabBtn);
 
       const view = document.createElement('div');
