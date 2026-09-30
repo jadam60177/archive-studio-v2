@@ -5977,5 +5977,251 @@ function renderLaunchCountdownBox(cur) {
       renderPhaseList();
     })();
   </script>
+  <!-- ===== 세계수 키우기 탭 ===== -->
+  <style>
+    #viewTree .wt-wrap { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; }
+    #viewTree .wt-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-sm); padding: 18px 20px; }
+    #viewTree .wt-scene { padding: 0; overflow: hidden; align-self: start; }
+    #viewTree .wt-scene svg { display: block; width: 100%; height: auto; }
+    #viewTree .wt-stage { font-size: 0.72rem; font-weight: 800; color: var(--primary-accent); letter-spacing: 0.04em; }
+    #viewTree .wt-name { font-size: 1.3rem; font-weight: 900; margin: 2px 0 10px; }
+    #viewTree .wt-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+    #viewTree .wt-stat { background: var(--card-sub-bg); border-radius: 10px; padding: 10px; text-align: center; }
+    #viewTree .wt-stat b { display: block; font-size: 1.05rem; font-weight: 900; color: var(--text-main); }
+    #viewTree .wt-stat span { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; }
+    #viewTree .wt-bar { height: 10px; background: var(--card-sub-bg); border: 1px solid var(--border-light); border-radius: 6px; overflow: hidden; margin: 5px 0 3px; }
+    #viewTree .wt-bar div { height: 100%; background: #e58fa8; }
+    #viewTree .wt-bar.lv div { background: var(--primary-accent); }
+    #viewTree .wt-small { font-size: 0.76rem; color: var(--text-muted); }
+    #viewTree .wt-sec { font-size: 0.85rem; font-weight: 800; margin: 16px 0 8px; }
+    #viewTree .wt-row { display: flex; justify-content: space-between; gap: 8px; font-size: 0.78rem; padding: 5px 0; border-bottom: 1px dashed var(--border-light); }
+    #viewTree .wt-row:last-child { border-bottom: none; }
+    #viewTree .wt-base { display: flex; gap: 6px; margin-top: 6px; }
+    #viewTree .wt-base input { flex: 1; min-width: 0; }
+    .wt-sky { fill: #eaf2ea; } .wt-hill { fill: #cfe0c6; } .wt-stars { display: none; }
+    body.dark-mode .wt-sky { fill: #101a22; } body.dark-mode .wt-hill { fill: #1f2e26; } body.dark-mode .wt-stars { display: inline; }
+    @media (max-width: 860px) { #viewTree .wt-wrap { grid-template-columns: 1fr; } }
+  </style>
+  <script>
+    (function () {
+      const nav = document.querySelector('.nav-tabs');
+      const guideView = document.getElementById('viewGuide');
+      if (!nav || !guideView || document.getElementById('viewTree')) return;
+
+      const FLOWER = 100000, FRUIT = 1000000, BUD = 10000;
+      const STAGES = [
+        { at: 0, name: '씨앗', msg: '흙 속에서 첫 이야기를 기다리고 있어요.' },
+        { at: 10000, name: '새싹', msg: '첫 잎이 올라왔어요!' },
+        { at: 200000, name: '어린 나무', msg: '줄기가 단단해지기 시작했어요.' },
+        { at: 1000000, name: '나무', msg: '어엿한 나무가 되었어요.' },
+        { at: 3000000, name: '큰 나무', msg: '가지마다 이야기가 주렁주렁해요.' },
+        { at: 7000000, name: '세계수', msg: '수많은 세계를 품은 세계수가 되었어요!' }
+      ];
+      const KEY = 'archiveStudio_treeBase';
+      const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
+      const man = (n) => n >= 10000 ? `${(n / 10000).toFixed(n >= 1000000 ? 0 : 1).replace(/\.0$/, '')}만 자` : `${fmt(n)}자`;
+      const getBase = () => { try { return parseInt(localStorage.getItem(KEY), 10) || 0; } catch (e) { return 0; } };
+
+      const guideBtn = [...nav.querySelectorAll('.tab-btn')].find((b) => (b.getAttribute('onclick') || '').includes("'guide'"));
+      const tabBtn = document.createElement('button');
+      tabBtn.className = 'tab-btn';
+      tabBtn.setAttribute('onclick', "switchTab('tree')");
+      tabBtn.textContent = '🌳 세계수';
+      if (guideBtn) guideBtn.insertAdjacentElement('beforebegin', tabBtn); else nav.appendChild(tabBtn);
+
+      const view = document.createElement('div');
+      view.id = 'viewTree';
+      view.className = 'tab-view';
+      view.innerHTML = `
+        <div class="wt-wrap">
+          <div class="wt-box wt-scene" id="wtScene"></div>
+          <div class="wt-box">
+            <div class="wt-stage" id="wtStageNo"></div>
+            <div class="wt-name" id="wtName"></div>
+            <div class="wt-small" id="wtMsg" style="margin:-4px 0 14px;"></div>
+            <div class="wt-stats">
+              <div class="wt-stat"><b id="wtTotal">0</b><span>누적 글자</span></div>
+              <div class="wt-stat"><b id="wtFlowers">0</b><span>🌸 꽃</span></div>
+              <div class="wt-stat"><b id="wtFruits">0</b><span>🍎 열매</span></div>
+            </div>
+            <div class="wt-small" style="font-weight:700; color:var(--text-main);">🌷 꽃봉오리 <span id="wtBudCount">0</span>/10 <span style="font-weight:400; color:var(--text-muted);">· 1만 자마다 하나씩 맺혀요</span></div>
+            <div id="wtBuds" style="display:flex; gap:5px; margin:6px 0 10px;"></div>
+            <div class="wt-small" id="wtNextFlower"></div>
+            <div class="wt-bar"><div id="wtFlowerBar"></div></div>
+            <div class="wt-small" id="wtNextStage" style="margin-top:10px;"></div>
+            <div class="wt-bar lv"><div id="wtStageBar"></div></div>
+            <div class="wt-sec">🌸 최근 피어난 꽃</div>
+            <div id="wtMilestones"></div>
+            <div class="wt-sec">📚 작품별 거름</div>
+            <div id="wtProjects"></div>
+            <div class="wt-sec">🌱 플래너 쓰기 전 기록</div>
+            <div class="wt-small">플래너를 쓰기 전에 쓴 글자 수를 더하면 그만큼 자란 나무에서 시작해요.</div>
+            <div class="wt-base">
+              <input type="number" id="wtBaseInput" class="form-control" min="0" placeholder="예: 1500000">
+              <button type="button" class="btn-xs" id="wtBaseSave" style="font-weight:700;">저장</button>
+            </div>
+          </div>
+        </div>`;
+      guideView.insertAdjacentElement('beforebegin', view);
+
+      const prevSwitch = switchTab;
+      switchTab = function (tab) {
+        if (tab === 'tree') {
+          document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+          document.querySelectorAll('.tab-view').forEach((v) => v.classList.remove('active'));
+          tabBtn.classList.add('active');
+          view.classList.add('active');
+          renderTree();
+          return;
+        }
+        prevSwitch(tab);
+        document.querySelectorAll('.nav-tabs .tab-btn').forEach((b) => {
+          b.classList.toggle('active', (b.getAttribute('onclick') || '').includes(`'${tab}'`));
+        });
+      };
+      window.switchTab = switchTab;
+
+      function collect() {
+        const events = [];
+        const perProject = [];
+        (projects || []).forEach((p) => {
+          const cpe = parseInt(p.charsPerEp, 10) || 5500;
+          let sum = 0;
+          (p.writingLogs || []).forEach((l) => {
+            const c = (parseInt(l.count, 10) || 0) * cpe;
+            if (c > 0) { sum += c; events.push({ date: l.date || '', time: l.time || '', chars: c }); }
+          });
+          perProject.push({ title: p.title, chars: sum });
+        });
+        events.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+        const base = getBase();
+        const total = base + events.reduce((s, e) => s + e.chars, 0);
+        const miles = [];
+        let run = base;
+        events.forEach((e) => {
+          const before = run; run += e.chars;
+          for (let k = Math.floor(before / FLOWER) + 1; k <= Math.floor(run / FLOWER); k++) {
+            miles.push(k * FLOWER % FRUIT === 0
+              ? { icon: '🍎', text: `${k / 10}번째 열매 (${man(k * FLOWER)})`, date: e.date }
+              : { icon: '🌸', text: `${k}번째 꽃 (${man(k * FLOWER)})`, date: e.date });
+          }
+        });
+        return { total, base, miles: miles.reverse(), perProject: perProject.sort((a, b) => b.chars - a.chars) };
+      }
+
+      function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+
+      function drawScene(total) {
+        const W = 600, H = 520, gx = 300, gy = 440;
+        const stage = STAGES.reduce((acc, s, i) => (total >= s.at ? i : acc), 0);
+        const flowers = Math.min(Math.floor(total / FLOWER), 160);
+        const fruits = Math.min(Math.floor(total / FRUIT), 40);
+        const r = rng(20260930);
+        let out = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="세계수 그림">`;
+        out += `<rect class="wt-sky" x="0" y="0" width="${W}" height="${H}"></rect><g class="wt-stars">`;
+        for (let i = 0; i < 40; i++) out += `<circle cx="${(r() * W).toFixed(1)}" cy="${(r() * 300).toFixed(1)}" r="${(r() * 1.4 + 0.4).toFixed(2)}" fill="#f4efe4" opacity="${(r() * 0.6 + 0.3).toFixed(2)}"></circle>`;
+        out += `</g><ellipse class="wt-hill" cx="${gx}" cy="${gy + 70}" rx="380" ry="110"></ellipse>`;
+        const spots = [];
+        if (stage === 0) {
+          out += `<ellipse cx="${gx}" cy="${gy}" rx="46" ry="12" fill="#8a6a4a"></ellipse><ellipse cx="${gx}" cy="${gy - 6}" rx="12" ry="8" fill="#6b4a2e"></ellipse>`;
+          if (total > 5000) out += `<path d="M${gx} ${gy - 12} q2 -16 12 -20" stroke="#5a9a5a" stroke-width="3" fill="none" stroke-linecap="round"></path>`;
+        } else if (stage === 1) {
+          const t = Math.min(1, (total - 10000) / 190000);
+          const h = 50 + 150 * t;
+          out += `<ellipse cx="${gx}" cy="${gy}" rx="${50 + 20 * t}" ry="12" fill="#8a6a4a"></ellipse>`;
+          out += `<path d="M${gx} ${gy - 4} C ${gx - 6} ${gy - h / 2}, ${gx + 6} ${gy - h * 0.8}, ${gx} ${gy - h}" stroke="#4f8a4f" stroke-width="${5 + 3 * t}" fill="none" stroke-linecap="round"></path>`;
+          const pairs = 1 + Math.floor(t * 3.99);
+          for (let k = 0; k < pairs; k++) {
+            const y = gy - h + k * (h * 0.22);
+            const L = (34 + 14 * t) * (1 - k * 0.12);
+            out += `<path d="M${gx} ${y} q ${-L * 0.85} -${L * 0.24} ${-L} -${L * 0.85} q ${L * 0.75} 0 ${L} ${L * 0.85}z" fill="#6fb36f"></path>`;
+            out += `<path d="M${gx} ${y} q ${L * 0.85} -${L * 0.24} ${L} -${L * 0.85} q ${-L * 0.75} 0 ${-L} ${L * 0.85}z" fill="#5aa35a"></path>`;
+            spots.push({ x: gx - L * 0.55, y: y - L * 0.45, rad: L * 0.35 }, { x: gx + L * 0.55, y: y - L * 0.45, rad: L * 0.35 });
+          }
+        } else {
+          const g = Math.min(1, 0.3 + 0.7 * Math.log(total / 200000) / Math.log(7000000 / 200000));
+          const th = 90 + 95 * g, tw = 10 + 22 * g, top = gy - th;
+          out += `<path d="M${gx - tw} ${gy} Q ${gx - tw * 0.4} ${gy - th * 0.5} ${gx - tw * 0.35} ${top} L ${gx + tw * 0.35} ${top} Q ${gx + tw * 0.4} ${gy - th * 0.5} ${gx + tw} ${gy} Z" fill="#7a5638"></path>`;
+          const br = [[-1, 0.55], [1, 0.45], [-1, 0.3], [1, 0.22]];
+          br.slice(0, stage >= 4 ? 4 : 2).forEach(([d, t]) => {
+            const y = gy - th * (1 - t);
+            out += `<path d="M${gx} ${y} Q ${gx + d * 60 * g} ${y - 30 * g} ${gx + d * (90 + 80 * g)} ${y - 60 * g}" stroke="#7a5638" stroke-width="${6 + 8 * g}" fill="none" stroke-linecap="round"></path>`;
+          });
+          const cr = 62 + 88 * g, cy = top - cr * 0.3;
+          const blobs = [[0, 0, 1], [-0.62, 0.2, 0.72], [0.62, 0.2, 0.72], [-0.35, -0.42, 0.7], [0.35, -0.42, 0.7], [0, 0.35, 0.75]];
+          if (stage >= 4) blobs.push([-0.95, 0.45, 0.5], [0.95, 0.45, 0.5], [0, -0.75, 0.55]);
+          const greens = ['#4f8a4f', '#5a9a5a', '#63a563', '#4a834f'];
+          if (stage >= 5) out += `<circle cx="${gx}" cy="${cy.toFixed(1)}" r="${(cr * 1.55).toFixed(1)}" fill="#f3d27a" opacity="0.18"></circle>`;
+          blobs.forEach(([dx, dy, s], i) => {
+            const x = gx + dx * cr, y = cy + dy * cr, rad = cr * 0.62 * s;
+            out += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rad.toFixed(1)}" fill="${greens[i % 4]}"></circle>`;
+            spots.push({ x, y, rad });
+          });
+          
+        }
+        const pick = () => { const s = spots[Math.floor(r() * spots.length)]; const a = r() * Math.PI * 2, d = Math.sqrt(r()) * s.rad * 0.85; return [s.x + Math.cos(a) * d, s.y + Math.sin(a) * d]; };
+        if (spots.length) {
+          for (let i = 0; i < flowers; i++) {
+            const [x, y] = pick(); const sz = 4 + r() * 3; const col = ['#f7b6c8', '#f39ab3', '#fbd3de', '#ffffff'][i % 4];
+            for (let k = 0; k < 5; k++) { const a = k * 1.2566 + i; out += `<circle cx="${(x + Math.cos(a) * sz * 0.7).toFixed(1)}" cy="${(y + Math.sin(a) * sz * 0.7).toFixed(1)}" r="${(sz * 0.55).toFixed(1)}" fill="${col}"></circle>`; }
+            out += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(sz * 0.35).toFixed(1)}" fill="#f3c34a"></circle>`;
+          }
+          const buds = Math.floor((total % FLOWER) / BUD);
+          const rb = rng(777);
+          const pickB = () => { const s = spots[Math.floor(rb() * spots.length)]; const a = rb() * Math.PI * 2, d = Math.sqrt(rb()) * s.rad * 0.8; return [s.x + Math.cos(a) * d, s.y + Math.sin(a) * d]; };
+          for (let i = 0; i < buds; i++) {
+            const [x, y] = pickB();
+            out += `<path d="M${x.toFixed(1)} ${(y + 4).toFixed(1)} l -3 3 l 6 0 z" fill="#3f7a3f"></path><ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="3.6" ry="5.2" fill="#ee8fab" stroke="#d9728f" stroke-width="1"></ellipse>`;
+          }
+          for (let i = 0; i < fruits; i++) { const [x, y] = pick(); out += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="7" fill="#e0a526" stroke="#b8801a" stroke-width="1.5"></circle><path d="M${x.toFixed(1)} ${(y - 7).toFixed(1)} l 3 -5" stroke="#6b4a2e" stroke-width="1.5"></path>`; }
+        }
+        out += `</svg>`;
+        return { svg: out, stage };
+      }
+
+      function renderTree() {
+        const d = collect();
+        const { svg, stage } = drawScene(d.total);
+        view.querySelector('#wtScene').innerHTML = svg;
+        const S = STAGES[stage], N = STAGES[stage + 1];
+        view.querySelector('#wtStageNo').textContent = `STAGE ${stage + 1} / ${STAGES.length}`;
+        view.querySelector('#wtName').textContent = S.name;
+        view.querySelector('#wtMsg').textContent = S.msg;
+        view.querySelector('#wtTotal').textContent = man(d.total);
+        view.querySelector('#wtFlowers').textContent = `${Math.floor(d.total / FLOWER)}송이`;
+        view.querySelector('#wtFruits').textContent = `${Math.floor(d.total / FRUIT)}개`;
+        const budN = Math.floor((d.total % FLOWER) / BUD);
+        view.querySelector('#wtBudCount').textContent = budN;
+        view.querySelector('#wtBuds').innerHTML = Array.from({ length: 10 }, (_, i) => `<span style="flex:1; height:12px; border-radius:6px; background:${i < budN ? '#ee8fab' : 'var(--card-sub-bg)'}; border:1px solid ${i < budN ? '#d9728f' : 'var(--border-light)'};"></span>`).join('');
+        const toFlower = FLOWER - (d.total % FLOWER);
+        view.querySelector('#wtNextFlower').textContent = `다음 봉오리까지 ${fmt(BUD - (d.total % BUD))}자 · 꽃 피기까지 ${fmt(toFlower)}자`;
+        view.querySelector('#wtFlowerBar').style.width = `${((d.total % FLOWER) / FLOWER * 100).toFixed(1)}%`;
+        if (N) {
+          view.querySelector('#wtNextStage').textContent = `'${N.name}'까지 ${man(N.at - d.total)} 남았어요`;
+          view.querySelector('#wtStageBar').style.width = `${((d.total - S.at) / (N.at - S.at) * 100).toFixed(1)}%`;
+        } else {
+          view.querySelector('#wtNextStage').textContent = '최고 단계에 도달했어요. 이제 꽃과 열매만 늘어나요 ✨';
+          view.querySelector('#wtStageBar').style.width = '100%';
+        }
+        view.querySelector('#wtMilestones').innerHTML = d.miles.length
+          ? d.miles.slice(0, 6).map((m) => `<div class="wt-row"><span>${m.icon} ${esc(m.text)}</span><span class="wt-small">${esc(m.date)}</span></div>`).join('')
+          : `<div class="wt-small">${d.total >= FLOWER ? '집필 일지에 기록이 쌓여 새 꽃이 피면 날짜와 함께 여기 남아요.' : '첫 꽃은 10만 자에서 피어나요.'}</div>`;
+        const rows = d.perProject.filter((p) => p.chars > 0);
+        if (d.base > 0) rows.push({ title: '플래너 쓰기 전 기록', chars: d.base });
+        view.querySelector('#wtProjects').innerHTML = rows.length
+          ? rows.map((p) => `<div class="wt-row"><span>${esc(p.title)}</span><strong>${man(p.chars)}</strong></div>`).join('')
+          : '<div class="wt-small">집필 일지에 기록을 남기면 나무가 자라요.</div>';
+        view.querySelector('#wtBaseInput').value = d.base || '';
+      }
+
+      view.querySelector('#wtBaseSave').addEventListener('click', () => {
+        const v = parseInt(view.querySelector('#wtBaseInput').value, 10);
+        if (isNaN(v) || v < 0) { alert('0 이상의 숫자를 입력해 주세요.'); return; }
+        try { localStorage.setItem(KEY, String(v)); } catch (e) {}
+        renderTree();
+      });
+    })();
+  </script>
 </body>
 </html>
