@@ -1938,14 +1938,17 @@
   </div>
 
   <script>
-    const APP_VERSION = "v14";
-    const UPDATE_NOTES = [     
-       {
-        version: "v14",
-        date: "2026-10-12",
+    const APP_VERSION = "v13.5";
+    const UPDATE_NOTES = [
+      {
+        version: "v13.5",
+        date: "2026-10-13",
         notes: [
-          "🌲 요정나무와 요정 그래픽이 업그레이드 되었어요.",
-        
+          "💾 이제 '전체 백업' 하나에 요정·요정나무·비타민 서랍·하루 집필 목표·업적 기록까지 모두 담겨요. 다른 기기로 옮겨도 요정이 그대로 따라와요. 이번 업데이트 후에 백업을 한 번 새로 받아 두세요!",
+          "📑 계약 만료일·해지 통보 마감일이 말일 근처에서 며칠 늦게 계산되던 문제를 고쳤어요. (예: 5/31 만료 · 3개월 전 통보 → 2/28)",
+          "🗑️ 계약을 지울 때 작품 일정은 남겨 둘 수 있어요.",
+          "🔥 작업 기록 탭에서 글자 수로만 남긴 날도 집필 챌린지 연속 일수에 들어가요.",
+          "🛠️ 그 밖에 자잘한 계산 오류와 표시 문제를 고쳤어요."
         ]
       },
       {
@@ -2123,6 +2126,22 @@
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
+    }
+
+    /* 화면에 넣는 사용자 입력 글자 (작품명·메모 등) 안전하게 */
+    function escH(v) {
+      return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    /* 개월 단위 날짜 계산: 말일을 넘기지 않게 맞춰요 (5/31의 3개월 전 → 2/28, 3/3이 아니라) */
+    function addMonthsClamped(date, months) {
+      const d = new Date(date);
+      const day = d.getDate();
+      d.setDate(1);
+      d.setMonth(d.getMonth() + months);
+      const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      d.setDate(Math.min(day, last));
+      return d;
     }
 
     /* 집필 일지 한 건의 실제 글자 수 (글자 수가 저장돼 있으면 그 값, 없으면 회차 × 회당 글자) */
@@ -2446,11 +2465,11 @@
           ? `[외전 ${spinoffNum}화] ${stageInfo.label}${isUploaded ? ' (업로드 완료)' : ''}`
           : `${ep}화: ${stageInfo.label}${isUploaded ? ' (업로드 완료)' : ''}`;
 
-      const spinoffBorder = isSpinoff ? 'border: 1.5px solid #d48806; background: #fffdf5;' : '';
+      const spinoffBorder = isSpinoff ? 'border: 1.5px dashed #d48806;' : '';
 
         cellsHtml += `
           <button type="button" class="rev-cell status-${status} ${isUploaded ? 'uploaded' : ''}" style="${spinoffBorder}" onclick="cycleRevisionStatus(${ep})" title="${titleText}">
-            <span style="${isSpinoff ? 'font-size:0.65rem; color:#b05a18; font-weight:900;' : ''}">${displayNum}</span>
+            <span style="${isSpinoff ? 'font-size:0.65rem; font-weight:900;' : ''}">${displayNum}</span>
             <span class="rev-cell-badge">✓</span>
           </button>
         `;
@@ -2458,14 +2477,14 @@
 
       container.innerHTML = cellsHtml;
 
-      document.getElementById('revCount0').textContent = `${counts[0]}/${targetEp}화`;
-      document.getElementById('revCount1').textContent = `${counts[1]}/${targetEp}화`;
-      document.getElementById('revCount2').textContent = `${counts[2]}/${targetEp}화`;
-      document.getElementById('revCount3').textContent = `${counts[3]}/${targetEp}화`;
+      document.getElementById('revCount0').textContent = `${counts[0]}/${totalEp}화`;
+      document.getElementById('revCount1').textContent = `${counts[1]}/${totalEp}화`;
+      document.getElementById('revCount2').textContent = `${counts[2]}/${totalEp}화`;
+      document.getElementById('revCount3').textContent = `${counts[3]}/${totalEp}화`;
 
-      const finalPct = Math.min(100, Math.round((counts[3] / targetEp) * 100));
+      const finalPct = Math.min(100, Math.round((counts[3] / totalEp) * 100));
       document.getElementById('revFinalProgressFill').style.width = `${finalPct}%`;
-      document.getElementById('revFinalProgressText').textContent = `송부용 최종 달성률: ${finalPct}% (${counts[3]}/${targetEp}화)`;
+      document.getElementById('revFinalProgressText').textContent = `송부용 최종 달성률: ${finalPct}% (${counts[3]}/${totalEp}화)`;
     }
 
     function cycleRevisionStatus(epNum) {
@@ -2646,17 +2665,41 @@
       switchTab('schedule');
     }
 
+    /* 작품·계약 말고도 브라우저에 따로 저장되는 것들 (전체 백업에 함께 묶어요) */
+    const BACKUP_EXTRA_KEYS = [
+      'archiveStudio_workGoal', 'archiveStudio_treeBase', 'archiveStudio_fairy',
+      'archiveStudio_vitamins', 'archiveStudio_vitaminCharm',
+      'archiveStudio_gachaPulls', 'archiveStudio_gachaSSR', 'archiveStudio_gachaGenre',
+      'archiveStudio_badgesSeen', 'archiveStudio_badgeVisit',
+      'archiveStudio_timerMode', 'archiveStudio_timerType', 'archiveStudio_theme'
+    ];
+
+    function collectBackupExtras() {
+      const extras = {};
+      BACKUP_EXTRA_KEYS.forEach(k => {
+        try { const v = localStorage.getItem(k); if (v != null) extras[k] = v; } catch (e) {}
+      });
+      return extras;
+    }
+
     function exportJSON() {
       const menu = document.getElementById('settingsMenu');
       if (menu) menu.classList.remove('open');
 
       saveCurrentProjectData();
+      const extras = collectBackupExtras();
+      const parseOr = (raw, fallback) => { try { return raw == null ? fallback : JSON.parse(raw); } catch (e) { return fallback; } };
       const exportBundle = {
-        version: "3.0",
+        version: "3.1",
         exportDate: new Date().toISOString(),
         currentProjectId: currentProjectId,
         projects: projects,
-        contracts: contracts
+        contracts: contracts,
+        extras: extras,
+        /* 예전 버전 플래너에서도 복원되도록 같이 넣어 둬요 */
+        workGoal: parseInt(extras['archiveStudio_workGoal'], 10) || 0,
+        vitamins: parseOr(extras['archiveStudio_vitamins'], []),
+        vitaminCharm: parseOr(extras['archiveStudio_vitaminCharm'], null)
       };
 
       const jsonStr = JSON.stringify(exportBundle, null, 2);
@@ -2680,7 +2723,7 @@
       reader.onload = function(e) {
         try {
           const imported = JSON.parse(e.target.result);
-          if (!imported.projects || !imported.contracts) {
+          if (!imported || !Array.isArray(imported.projects) || !Array.isArray(imported.contracts)) {
             throw new Error("올바른 백업 파일 형식이 아닙니다.");
           }
 
@@ -2692,14 +2735,25 @@
               if (!p.submissionStatus) p.submissionStatus = '투고 준비';
             });
             contracts = imported.contracts || [];
-            currentProjectId = imported.currentProjectId || (projects[0] ? projects[0].id : null);
+            const savedId = imported.currentProjectId;
+            currentProjectId = projects.some(p => p.id === savedId) ? savedId : (projects[0] ? projects[0].id : null);
             saveData();
-            renderProjectsSelect();
-            loadCurrentProjectData();
-            renderContracts();
-            renderTodayBriefing();
-            renderPaceRadar();
-            renderRevisionPanel();
+
+            /* 요정·요정나무·비타민·하루 목표 같은 나머지 기록도 함께 복원 */
+            const setRaw = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+            if (imported.extras && typeof imported.extras === 'object') {
+              BACKUP_EXTRA_KEYS.forEach(k => {
+                const v = imported.extras[k];
+                setRaw(k, typeof v === 'string' ? v : null);
+              });
+            } else {
+              /* 예전 백업 파일 */
+              if (Array.isArray(imported.vitamins)) setRaw('archiveStudio_vitamins', JSON.stringify(imported.vitamins));
+              if (imported.vitaminCharm) setRaw('archiveStudio_vitaminCharm', JSON.stringify(imported.vitaminCharm));
+              if (imported.workGoal != null) setRaw('archiveStudio_workGoal', parseInt(imported.workGoal, 10) ? String(parseInt(imported.workGoal, 10)) : null);
+            }
+            /* 모든 탭이 복원된 내용으로 다시 그려지도록 새로고침 */
+            location.reload();
           }
         } catch (err) {
           alert("파일을 읽는 중 오류가 발생했습니다: " + err.message);
@@ -2727,7 +2781,7 @@
       content.style.display = 'block';
 
       select.innerHTML = projects.map(p => `
-        <option value="${p.id}" ${p.id === currentProjectId ? 'selected' : ''}>${p.title}</option>
+        <option value="${p.id}" ${p.id === currentProjectId ? 'selected' : ''}>${escH(p.title)}</option>
       `).join('');
 
       const cur = getCurrentProject();
@@ -2895,7 +2949,7 @@
             <span class="phase-card-title" style="font-size:0.78rem;">${wp.startDate} ~ ${wp.endDate}</span>
             <button class="phase-card-del" onclick="deleteWritingPhase(${wp.id})">삭제</button>
           </div>
-          <div class="phase-detail" style="font-size:0.72rem;">${wp.note ? `📝 ${wp.note}` : '지정 기간 특별 목표'}</div>
+          <div class="phase-detail" style="font-size:0.72rem;">${wp.note ? `📝 ${escH(wp.note)}` : '지정 기간 특별 목표'}</div>
         </div>
       `).join('');
     }
@@ -2992,8 +3046,7 @@
       } else {
         const manualExp = document.getElementById('ctExpiryDate').value;
         if (manualExp) {
-          const mDate = new Date(manualExp + 'T00:00:00');
-          mDate.setMonth(mDate.getMonth() - noticeMonths);
+          const mDate = addMonthsClamped(new Date(manualExp + 'T00:00:00'), -noticeMonths);
           document.getElementById('ctNoticeDeadline').value = formatDate(mDate);
         }
         return;
@@ -3006,12 +3059,10 @@
       }
 
       const bDate = new Date(baseDateStr + 'T00:00:00');
-      const expDate = new Date(bDate);
-      expDate.setFullYear(expDate.getFullYear() + years);
+      const expDate = addMonthsClamped(bDate, years * 12);
       document.getElementById('ctExpiryDate').value = formatDate(expDate);
 
-      const noticeDate = new Date(expDate);
-      noticeDate.setMonth(noticeDate.getMonth() - noticeMonths);
+      const noticeDate = addMonthsClamped(expDate, -noticeMonths);
       document.getElementById('ctNoticeDeadline').value = formatDate(noticeDate);
     }
 
@@ -3121,6 +3172,7 @@
       // 미계약으로 선택하고 저장한 경우: 계약 목록에서 빼고 작업 중인 작품으로만 등록
       if (isUncontracted) {
         if (editId) {
+          if (!confirm(`'${title}'을(를) 미계약으로 바꾸면 이 계약의 출간일·마감·정산 정보가 모두 지워져요.\n작품의 연재 일정과 집필 기록은 그대로 남아요. 계속할까요?`)) return;
           contracts = contracts.filter(c => c.id !== parseInt(editId));
         }
         let existingProj = projects.find(p => p.title.trim().toLowerCase() === title.toLowerCase());
@@ -3194,6 +3246,13 @@
         hideFromRadar: !showInRadar
       };
 
+      /* 계약 수정 중 작품명을 바꿨다면, 연결된 작품 이름도 같이 바꿔서 연결이 끊기지 않게 해요 */
+      if (existing && existing.title.trim().toLowerCase() !== title.toLowerCase()) {
+        const oldProj = projects.find(p => p.title.trim().toLowerCase() === existing.title.trim().toLowerCase());
+        const clash = projects.find(p => p.title.trim().toLowerCase() === title.toLowerCase());
+        if (oldProj && !clash) oldProj.title = title;
+      }
+
       const existingProj = projects.find(p => p.title.trim().toLowerCase() === title.toLowerCase());
       if (existingProj) {
         existingProj.hideFromRadar = !showInRadar;
@@ -3253,13 +3312,10 @@
 
       const matchingProj = projects.find(p => p.title.trim().toLowerCase() === targetContract.title.trim().toLowerCase());
 
+      if (!confirm(`'${targetContract.title}' 계약 정보를 삭제하시겠습니까?`)) return;
       let deleteProjToo = false;
       if (matchingProj) {
-        const choice = confirm(`'${targetContract.title}' 계약 정보를 삭제하시겠습니까?\n\n[확인]: 연동된 '작업 중인 작품'(${matchingProj.title}) 및 연재 플랜도 함께 삭제\n[취소]: 삭제를 진행하지 않음`);
-        if (!choice) return;
-        deleteProjToo = true;
-      } else {
-        if (!confirm(`'${targetContract.title}' 계약 정보를 삭제하시겠습니까?`)) return;
+        deleteProjToo = confirm(`연동된 작품 '${matchingProj.title}'의 연재 일정·집필 기록·설정집도 함께 삭제할까요?\n\n[확인]: 작품까지 함께 삭제 (되돌릴 수 없어요)\n[취소]: 계약 정보만 삭제하고 작품은 남기기`);
       }
 
       contracts = contracts.filter(c => c.id !== id);
@@ -3365,8 +3421,7 @@
 
         if (c.expiryDate) {
           const expDateObj = new Date(c.expiryDate + 'T00:00:00');
-          const noticeDateObj = new Date(expDateObj);
-          noticeDateObj.setMonth(noticeDateObj.getMonth() - (c.noticeMonths || 3));
+          const noticeDateObj = addMonthsClamped(expDateObj, -(c.noticeMonths || 3));
           const noticeDateStr = formatDate(noticeDateObj);
           const diffNoticeDays = getDiffDays(noticeDateObj, today);
 
@@ -3402,11 +3457,11 @@
             <div class="dual-deadline-box">
               <div class="deadline-row">
                 <span class="deadline-label my">내 목표 마감</span>
-                <span class="deadline-val">${c.myDeadline ? `${c.myDeadline} (D-${myDDay})` : '미설정'}</span>
+                <span class="deadline-val">${c.myDeadline ? `${c.myDeadline} (${myDDay === 0 ? 'D-Day' : myDDay > 0 ? 'D-' + myDDay : 'D+' + Math.abs(myDDay)})` : '미설정'}</span>
               </div>
               <div class="deadline-row">
                 <span class="deadline-label">출판사 공식 마감</span>
-                <span class="deadline-val" style="color:var(--text-muted);">${c.pubDeadline ? `${c.pubDeadline} (D-${pubDDay})` : '미설정'}</span>
+                <span class="deadline-val" style="color:var(--text-muted);">${c.pubDeadline ? `${c.pubDeadline} (${pubDDay === 0 ? 'D-Day' : pubDDay > 0 ? 'D-' + pubDDay : 'D+' + Math.abs(pubDDay)})` : '미설정'}</span>
               </div>
               ${bufferHtml ? `<div style="text-align:right;">${bufferHtml}</div>` : ''}
             </div>
@@ -3461,8 +3516,8 @@
           <div class="contract-card">
             <div class="contract-card-header">
               <div>
-                <h3 class="contract-title">${c.title}</h3>
-                <span class="contract-pub-tag">${c.publisher || '출판사 미정'}</span>
+                <h3 class="contract-title">${escH(c.title)}</h3>
+                <span class="contract-pub-tag">${escH(c.publisher || '출판사 미정')}</span>
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:0.75rem; color:var(--text-muted);">${c.publishDate ? `출간: ${c.publishDate}` : '미출간'}</span>
@@ -3493,25 +3548,25 @@
                 <span><strong>만료일:</strong> ${expiryDisplay}</span>
               </div>
               <div>${noticeTagHtml}</div>
-              <div style="font-size:0.75rem; color:var(--text-muted);">* 만료 ${c.noticeMonths || 3}개월 전 통보 (${c.renewalUnit || '1년 단위'} 자동연장)</div>
+              <div style="font-size:0.75rem; color:var(--text-muted);">* 만료 ${c.noticeMonths || 3}개월 전 통보 (${escH(c.renewalUnit || '1년 단위')} 자동연장)</div>
             </div>
 
             <div class="finance-row">
               <div class="finance-item">
                 <span>선인세 (MG)</span>
-                <strong>${c.advance || '—'}</strong>
+                <strong>${escH(c.advance || '—')}</strong>
               </div>
               <div class="finance-item">
                 <span>정산 비율 (RS)</span>
-                <strong>${c.royalty || '—'}</strong>
+                <strong>${escH(c.royalty || '—')}</strong>
               </div>
               <div class="finance-item">
                 <span>정산 입금일</span>
-                <strong style="color:var(--settlement-text);">${c.settlementDay ? `매월 ${c.settlementDay}일` : (c.settlementCycle || '—')}</strong>
+                <strong style="color:var(--settlement-text);">${c.settlementDay ? `매월 ${c.settlementDay}일` : escH(c.settlementCycle || '—')}</strong>
               </div>
             </div>
 
-            ${c.memo ? `<div style="font-size:0.75rem; color:var(--text-muted); background:var(--card-sub-bg); padding:6px 10px; border-radius:6px;">📝 ${c.memo}</div>` : ''}
+            ${c.memo ? `<div style="font-size:0.75rem; color:var(--text-muted); background:var(--card-sub-bg); padding:6px 10px; border-radius:6px;">📝 ${escH(c.memo)}</div>` : ''}
 
             <div class="contract-card-footer">
               <button class="btn-xs ${isRadarActive ? 'radar-active' : 'radar-inactive'}" onclick="toggleContractRadar(${c.id})" title="클릭 시 마감 페이스 레이더 표시/제외를 전환합니다.">
@@ -3675,6 +3730,11 @@
         `;
       }).join('');
     }
+    /* 엑셀 칸 하나: 쉼표·따옴표·줄바꿈이 있어도 칸이 밀리지 않게 */
+    function csvCell(v) {
+      return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    }
+
     function exportContractsToCSV() {
       if (contracts.length === 0) {
         alert('내보낼 계약 데이터가 없습니다.');
@@ -3685,7 +3745,7 @@
       contracts.forEach(c => {
         const pipe = c.pipeline || {};
         const doneList = PIPELINE_STAGES.filter(s => pipe[s]).join('>');
-        csv += `"${c.title}","${c.publisher}","${c.serialStartDate || ''}","${c.serialEndDate || ''}","${c.contractDate || ''}","${c.publishDate || ''}","${c.spinoffPublishDate || ''}","${c.expiryBasis || ''}","${c.durationYears || 3}","${c.expiryDate || ''}","${c.noticeMonths}","${c.renewalUnit}","${c.myDeadline || ''}","${c.pubDeadline || ''}","${c.settlementDay || ''}","${c.settlementCycle || ''}","${c.advance || ''}","${c.royalty || ''}","${doneList}","${c.memo || ''}"\n`;
+        csv += [c.title, c.publisher, c.serialStartDate, c.serialEndDate, c.contractDate, c.publishDate, c.spinoffPublishDate, c.expiryBasis, c.durationYears || 3, c.expiryDate, c.noticeMonths, c.renewalUnit, c.myDeadline, c.pubDeadline, c.settlementDay, c.settlementCycle, c.advance, c.royalty, doneList, c.memo].map(csvCell).join(',') + '\n';
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -3854,7 +3914,10 @@
       const removed = cur.writingLogs.splice(index, 1)[0];
       const stockInput = document.getElementById('stockpile');
       const currentStock = parseInt(stockInput.value) || 0;
-      stockInput.value = Math.max(0, currentStock - removed.count);
+      stockInput.value = Math.max(0, currentStock - (parseInt(removed.count) || 0));
+      /* 작업 기록 탭에서 모아 둔 글자·원고 총 글자 기준점도 기록 전으로 되돌려요 */
+      if (removed.carryAfter != null && (parseInt(cur.stockCharCarry, 10) || 0) === removed.carryAfter) cur.stockCharCarry = removed.carryBefore || 0;
+      if (removed.totalAfter != null && cur.workLastTotal === removed.totalAfter && removed.totalBefore != null) cur.workLastTotal = removed.totalBefore;
 
       saveCurrentProjectData();
       renderWritingLogs();
@@ -4196,6 +4259,7 @@
     }
 
     function changeReportMonth(offset) {
+      reportViewDate.setDate(1);
       reportViewDate.setMonth(reportViewDate.getMonth() + offset);
       renderMonthlyReport();
     }
@@ -4233,7 +4297,8 @@
         const count = parseInt(l.count) || 0;
         const dur = parseInt(l.duration) || 0;
 
-        dateMap[l.date] = (dateMap[l.date] || 0) + count;
+        /* 글자 수로 기록한 날도 제대로 잡히도록 날짜별로 글자 수를 모아요 */
+        dateMap[l.date] = (dateMap[l.date] || 0) + __logChars(l, charsPerEp);
         totalEps += count;
         totalDurationMins += dur;
 
@@ -4247,19 +4312,22 @@
       const activeDays = Object.keys(dateMap).length;
       const totalChars = monthLogs.reduce((s, l) => s + __logChars(l, charsPerEp), 0);
 
-      const dailyAvg = activeDays > 0 ? (totalEps / activeDays).toFixed(1) : 0;
+      /* 회차 환산: 글자 수로만 남긴 기록도 회당 글자 기준으로 화수에 포함 */
+      const epEquiv = Math.max(totalEps, totalChars / charsPerEp);
+      const epText = (n) => (Math.round(n * 10) / 10).toLocaleString();
+      const dailyAvg = activeDays > 0 ? epText(epEquiv / activeDays) : 0;
       const dailyAvgChars = activeDays > 0 ? Math.round(totalChars / activeDays) : 0;
 
       let peakDate = null;
-      let peakCount = 0;
-      for (const [dStr, cnt] of Object.entries(dateMap)) {
-        if (cnt > peakCount) {
-          peakCount = cnt;
+      let peakChars = 0;
+      for (const [dStr, ch] of Object.entries(dateMap)) {
+        if (ch > peakChars) {
+          peakChars = ch;
           peakDate = dStr;
         }
       }
 
-      document.getElementById('rptTotalEp').textContent = `${totalEps}화`;
+      document.getElementById('rptTotalEp').textContent = `${epText(epEquiv)}화`;
       document.getElementById('rptTotalChars').textContent = `공백포함 약 ${(totalChars / 10000).toFixed(1)}만 자 (${totalChars.toLocaleString()}자)`;
 
       const activeRate = Math.round((activeDays / totalDaysInMonth) * 100);
@@ -4271,10 +4339,10 @@
 
       const peakDayEl = document.getElementById('rptPeakDay');
       const peakCountEl = document.getElementById('rptPeakCount');
-      if (peakDate && peakCount > 0) {
+      if (peakDate && peakChars > 0) {
         const dayNum = parseInt(peakDate.split('-')[2]);
         peakDayEl.textContent = `${month}월 ${dayNum}일`;
-        peakCountEl.textContent = `하루 최대 ${peakCount}화 (${(peakCount * charsPerEp).toLocaleString()}자)`;
+        peakCountEl.textContent = `하루 최대 ${peakChars.toLocaleString()}자 (약 ${epText(peakChars / charsPerEp)}화)`;
       } else {
         peakDayEl.textContent = '기록 없음';
         peakCountEl.textContent = '—';
@@ -4359,7 +4427,7 @@
         return `
           <div class="dday-tag">
             <span class="dday-badge">${diffLabel}</span>
-            <span>${item.title} (${item.date})</span>
+            <span>${escH(item.title)} (${item.date})</span>
             <button style="border:none; background:none; color:var(--text-muted); cursor:pointer; font-weight:bold;" onclick="removeDDay(${item.id})">×</button>
           </div>
         `;
@@ -4466,10 +4534,11 @@
       let lastUploadDate = null;
       let currentPhaseIdx = 0;
 
-      const maxDays = hasTarget ? 600 : 120;
+      const maxDays = hasTarget ? 3660 : 120; /* 주 1회처럼 느린 연재도 완결까지 계산되도록 최대 10년 */
 
       while (dayCounter < maxDays && currentPhaseIdx < p.phases.length) {
         const dateStr = formatDate(currentDate);
+        if (p.__stopDate && dateStr >= p.__stopDate) break; /* 중간 구간 계산은 필요한 날짜까지만 */
         const dayOfWeek = currentDate.getDay();
 
         if (trackStockpile && dayCounter > 0) {
@@ -4506,8 +4575,9 @@
           note = '요일 지정 연재';
         } else if (phase.mode === 'bomb') {
           isUploadDay = true;
-          const remainingInPhase = phase.endEp - currentEp;
-          episodesToUpload = Math.max(1, remainingInPhase);
+          /* 종료 회차가 '완결까지(0)'면 완결 회차까지 한 번에 올려요 */
+          const bombEnd = phase.endEp > 0 ? phase.endEp : (hasTarget ? totalTargetEp : currentEp + 1);
+          episodesToUpload = Math.max(1, bombEnd - currentEp);
           note = `연참 (${episodesToUpload}화)`;
         }
 
@@ -4635,7 +4705,11 @@
       const first = calculatedSchedule[0];
       const last = calculatedSchedule[calculatedSchedule.length - 1];
 
-      if (hasTarget) {
+      const fullTarget = (parseInt(cur.targetEp) || 0) + (parseInt(cur.spinoffEp) || 0);
+      if (hasTarget && last.cumulativeEp < fullTarget) {
+        document.getElementById('kpiEndDate').textContent = '계산 범위 밖';
+        document.getElementById('kpiEndSub').textContent = `${last.cumulativeEp}화까지만 계산됐어요 (연재 구간이 완결 전에 끝났는지 확인해 주세요)`;
+      } else if (hasTarget) {
         document.getElementById('kpiEndDate').textContent = last.date;
         document.getElementById('kpiEndSub').textContent = `${last.cumulativeEp}화 완결 기준`;
       } else {
@@ -5003,7 +5077,7 @@ function renderLaunchCountdownBox(cur) {
           return diff > 0 ? `D-${diff}` : `D+${Math.abs(diff)}`;
         };
         if (deadlineDateStr) {
-          bottomInfoText = `${deadlineLabel}: ${deadlineDateStr} (${makeDTag(deadlineDateStr)})`;
+          bottomInfoText = `${escH(deadlineLabel)}: ${deadlineDateStr} (${makeDTag(deadlineDateStr)})`;
         } else if (hasSerialPlan && proj.startDate) {
           bottomInfoText = `런칭: ${proj.startDate} (${makeDTag(proj.startDate)})`;
         }
@@ -5013,8 +5087,8 @@ function renderLaunchCountdownBox(cur) {
           <div class="pace-card ${statusClass}">
             <div class="pace-card-top">
               <div>
-                <span class="pace-card-title">${proj.title}</span>
-                <span style="font-size:0.7rem; color:var(--text-muted); margin-left:4px;">${ct ? `(${ct.publisher})` : '(미계약)'}</span>
+                <span class="pace-card-title">${escH(proj.title)}</span>
+                <span style="font-size:0.7rem; color:var(--text-muted); margin-left:4px;">${ct ? `(${escH(ct.publisher)})` : '(미계약)'}</span>
               </div>
               <span class="pace-badge ${statusClass}">${badgeText}</span>
             </div>
@@ -5129,7 +5203,8 @@ function renderLaunchCountdownBox(cur) {
         cell.classList.add('prep-period');
       }
 
-      let content = `<div class="day-num ${isStartDate ? 'today' : ''}">${dayNum}</div>`;
+      /* 동그라미는 실제 오늘 날짜에 (연재 시작일은 🚀 런칭 표시로 보여요) */
+      let content = `<div class="day-num ${dateStr === formatDate(getTodayMidnight()) ? 'today' : ''}">${dayNum}</div>`;
 
       contracts.forEach(ct => {
         if (ct.settlementDay) {
@@ -5140,7 +5215,7 @@ function renderLaunchCountdownBox(cur) {
             isSettlementDay = true;
           }
           if (isSettlementDay) {
-            content += `<span class="badge-settlement">💰 ${ct.publisher} 정산</span>`;
+            content += `<span class="badge-settlement">💰 ${escH(ct.publisher)} 정산</span>`;
           }
         }
       });
@@ -5155,20 +5230,20 @@ function renderLaunchCountdownBox(cur) {
 
           const ddays = (curProj.dDayList || []).filter(d => d.date === dateStr);
           ddays.forEach(d => {
-            content += `<span class="badge-dday">🎯 ${d.title}</span>`;
+            content += `<span class="badge-dday">🎯 ${escH(d.title)}</span>`;
           });
 
           const memo = (curProj.dateMemos || {})[dateStr];
           if (memo) {
-            content += `<span class="badge-memo">📝 ${memo}</span>`;
+            content += `<span class="badge-memo">📝 ${escH(memo)}</span>`;
           }
 
           if (isPrepPeriod) {
             const planForDay = getDailyWritingPlanForDate(curProj, dateStr);
             const planText = planForDay > 0 ? ` (+${planForDay}화)` : '';
             const wpInfo = getWritingPhaseInfoForDate(curProj, dateStr);
-            const noteText = wpInfo && wpInfo.note ? ` [${wpInfo.note.slice(0, 4)}]` : '';
-            content += `<span class="badge-prep" title="${wpInfo ? wpInfo.note : '비축 준비 기간'}">🌊 비축 집필${planText}${noteText}</span>`;
+            const noteText = wpInfo && wpInfo.note ? ` [${escH(wpInfo.note.slice(0, 4))}]` : '';
+            content += `<span class="badge-prep" title="${wpInfo ? escH(wpInfo.note) : '비축 준비 기간'}">🌊 비축 집필${planText}${noteText}</span>`;
           }
 
           if (curProj.startDate && dateStr === curProj.startDate) {
@@ -5213,12 +5288,12 @@ function renderLaunchCountdownBox(cur) {
 
         projects.forEach(p => {
           if (p.startDate === dateStr) {
-            content += `<span class="badge-multi-ep" style="background:var(--primary); color:#ffffff; font-weight:800;" title="${p.title} 런칭일">🚀 [${p.title.slice(0, 4)}] 런칭!</span>`;
+            content += `<span class="badge-multi-ep" style="background:var(--primary); color:#ffffff; font-weight:800;" title="${escH(p.title)} 런칭일">🚀 [${escH(p.title.slice(0, 4))}] 런칭!</span>`;
           } else if (p.writingStartDate) {
             if (p.startDate && dateStr >= p.writingStartDate && dateStr < p.startDate) {
-              content += `<span class="badge-multi-ep" style="background:#eaf2ee; color:#2d5a4c; border-color:#bed8cc; font-size:0.65rem;" title="${p.title} 비축 집필 준비 기간">🌊 [${p.title.slice(0, 3)}] 비축집필</span>`;
+              content += `<span class="badge-multi-ep" style="background:#eaf2ee; color:#2d5a4c; border-color:#bed8cc; font-size:0.65rem;" title="${escH(p.title)} 비축 집필 준비 기간">🌊 [${escH(p.title.slice(0, 3))}] 비축집필</span>`;
             } else if (!p.startDate && dateStr >= p.writingStartDate) {
-              content += `<span class="badge-multi-ep" style="background:#eaf2ee; color:#2d5a4c; border-color:#bed8cc; font-size:0.65rem;" title="${p.title} 비축 집필 준비 기간">🌊 [${p.title.slice(0, 3)}] 비축집필</span>`;
+              content += `<span class="badge-multi-ep" style="background:#eaf2ee; color:#2d5a4c; border-color:#bed8cc; font-size:0.65rem;" title="${escH(p.title)} 비축 집필 준비 기간">🌊 [${escH(p.title.slice(0, 3))}] 비축집필</span>`;
             }
           }
         });
@@ -5228,31 +5303,31 @@ function renderLaunchCountdownBox(cur) {
           const pal = getProjectPalette(ev.projId);
           const epText = ev.epStart === ev.epEnd ? `${ev.epStart}화` : `${ev.epStart}~${ev.epEnd}화(${ev.epCount}연참)`;
           content += `
-            <span class="badge-multi-ep" style="background:${pal.bg}; color:${pal.text}; border-color:${pal.border};" title="${ev.projTitle} ${epText}">
-              <strong>${ev.projTitle.slice(0, 5)}:</strong> ${epText}
+            <span class="badge-multi-ep" style="background:${pal.bg}; color:${pal.text}; border-color:${pal.border};" title="${escH(ev.projTitle)} ${epText}">
+              <strong>${escH(ev.projTitle.slice(0, 5))}:</strong> ${epText}
             </span>
           `;
           if (ev.completedVolumeNum) {
-            content += `<span class="badge-volume" style="font-size:0.65rem;">📖 ${ev.projTitle.slice(0,4)} ${ev.completedVolumeNum}권</span>`;
+            content += `<span class="badge-volume" style="font-size:0.65rem;">📖 ${escH(ev.projTitle.slice(0,4))} ${ev.completedVolumeNum}권</span>`;
           }
         });
 
         contracts.forEach(ct => {
           if (ct.myDeadline === dateStr) {
-            content += `<span class="badge-multi-deadline">🚨 [${ct.title.slice(0, 5)}] 내 마감</span>`;
+            content += `<span class="badge-multi-deadline">🚨 [${escH(ct.title.slice(0, 5))}] 내 마감</span>`;
           } else if (ct.pubDeadline === dateStr) {
-            content += `<span class="badge-multi-deadline" style="background:var(--card-sub-bg); color:var(--text-muted); border-color:var(--border);">🏁 [${ct.title.slice(0, 5)}] 출판사마감</span>`;
+            content += `<span class="badge-multi-deadline" style="background:var(--card-sub-bg); color:var(--text-muted); border-color:var(--border);">🏁 [${escH(ct.title.slice(0, 5))}] 출판사마감</span>`;
           }
         });
 
         projects.forEach(p => {
           (p.dDayList || []).forEach(d => {
             if (d.date === dateStr) {
-              content += `<span class="badge-dday" style="font-size:0.65rem;">🎯 ${p.title.slice(0,4)}:${d.title}</span>`;
+              content += `<span class="badge-dday" style="font-size:0.65rem;">🎯 ${escH(p.title.slice(0,4))}:${escH(d.title)}</span>`;
             }
           });
           if ((p.hiatusDates || []).includes(dateStr)) {
-            content += `<span style="font-size:0.65rem; color:var(--danger); font-weight:700;">[${p.title.slice(0,4)}] 휴재</span>`;
+            content += `<span style="font-size:0.65rem; color:var(--danger); font-weight:700;">[${escH(p.title.slice(0,4))}] 휴재</span>`;
           }
         });
       }
@@ -5292,7 +5367,7 @@ function renderLaunchCountdownBox(cur) {
             <td><span style="font-weight: 700; color: var(--primary-accent);">${row.epCount}화</span></td>
             <td>${row.cumulativeEp}화</td>
             <td>${stockDisplay}</td>
-            <td><span style="font-size: 0.75rem; background: var(--card-sub-bg); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-light);">${row.note}</span></td>
+            <td><span style="font-size: 0.75rem; background: var(--card-sub-bg); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-light);">${escH(row.note)}</span></td>
           </tr>
         `;
 
@@ -5300,7 +5375,7 @@ function renderLaunchCountdownBox(cur) {
           html += `
             <tr class="volume-divider-row">
               <td colspan="6">
-                📖 [단행본 ${row.completedVolumeNum}권 분량 마감선] 누적 ${row.cumulativeEp}화 돌파 (약 ${(row.completedVolumeNum * 13).toFixed(0)}만 자 구간)
+                📖 [단행본 ${row.completedVolumeNum}권 분량 마감선] 누적 ${row.cumulativeEp}화 돌파 (약 ${Math.round(row.completedVolumeNum * ((parseInt((getCurrentProject() || {}).charsPerVol) || 130000) / 10000))}만 자 구간)
               </td>
             </tr>
           `;
@@ -5431,8 +5506,7 @@ function renderLaunchCountdownBox(cur) {
         contracts.forEach(ct => {
           if (ct.expiryDate) {
             const expDateObj = new Date(ct.expiryDate + 'T00:00:00');
-            const noticeDateObj = new Date(expDateObj);
-            noticeDateObj.setMonth(noticeDateObj.getMonth() - (ct.noticeMonths || 3));
+            const noticeDateObj = addMonthsClamped(expDateObj, -(ct.noticeMonths || 3));
             const diffNoticeDays = getDiffDays(noticeDateObj, today);
             if (diffNoticeDays >= 0 && diffNoticeDays <= 90) {
               urgentContracts.push(`${ct.title}(D-${diffNoticeDays})`);
@@ -5445,10 +5519,12 @@ function renderLaunchCountdownBox(cur) {
     }
 
     function prevMonth() {
+      currentViewDate.setDate(1);
       currentViewDate.setMonth(currentViewDate.getMonth() - 1);
       renderCalendar();
     }
     function nextMonth() {
+      currentViewDate.setDate(1);
       currentViewDate.setMonth(currentViewDate.getMonth() + 1);
       renderCalendar();
     }
@@ -5467,6 +5543,7 @@ function renderLaunchCountdownBox(cur) {
         currentProjectId: currentProjectId,
         contracts: contracts
       };
+      if (window.__archiveLoadBlocked) return; /* 저장된 데이터를 못 읽었을 땐 덮어쓰지 않아요 */
       try {
         localStorage.setItem('archiveStudioMultiProjectData_v3', JSON.stringify(bundle));
       } catch (err) {
@@ -5494,10 +5571,23 @@ function renderLaunchCountdownBox(cur) {
             if (p.submissionMemo === undefined) p.submissionMemo = '';
           });
           currentProjectId = bundle.currentProjectId;
+          if (!projects.some(p => p.id === currentProjectId)) currentProjectId = projects[0] ? projects[0].id : null;
           contracts = bundle.contracts || [];
           return;
         } catch(e) {
           console.error(e);
+          /* 저장된 데이터가 깨져 있으면 지우지 않고 따로 보관해 둬요 */
+          try {
+            localStorage.setItem('archiveStudio_brokenData_' + formatDate(new Date()), saved);
+            alert('⚠️ 저장된 데이터를 읽지 못했어요.\n원래 데이터는 지우지 않고 따로 보관해 뒀어요. 백업 파일이 있다면 [⚙️ 설정 → 📂 백업 복원]으로 불러와 주세요.');
+          } catch (copyErr) {
+            window.__archiveLoadBlocked = true;
+            alert('⚠️ 저장된 데이터를 읽지 못했어요.\n원래 데이터를 지키기 위해 이번에는 아무것도 저장하지 않아요. 백업 파일로 복원하거나 제작자에게 알려 주세요.');
+          }
+          projects = [];
+          currentProjectId = null;
+          contracts = [];
+          return;
         }
       }
 
@@ -5511,8 +5601,12 @@ function renderLaunchCountdownBox(cur) {
       const menu = document.getElementById('settingsMenu');
       if (menu) menu.classList.remove('open');
 
-      if (!confirm('모든 작품의 집필 플랜과 계약 데이터가 완전히 삭제됩니다. 초기화하시겠습니까? (미리 상단 [전체 백업]을 권장합니다)')) return;
-      localStorage.removeItem('archiveStudioMultiProjectData_v3');
+      if (!confirm('모든 작품의 집필 플랜과 계약 데이터, 요정·요정나무·비타민 서랍·업적 기록까지 완전히 삭제됩니다. 초기화하시겠습니까? (미리 상단 [전체 백업]을 권장합니다)')) return;
+      try {
+        localStorage.removeItem('archiveStudioMultiProjectData_v3');
+        BACKUP_EXTRA_KEYS.filter(k => k !== 'archiveStudio_theme').forEach(k => localStorage.removeItem(k));
+        ['archiveStudio_workTimer', 'archiveStudio_timerPending'].forEach(k => localStorage.removeItem(k));
+      } catch (e) {}
       location.reload();
     }
 
@@ -5529,7 +5623,7 @@ function renderLaunchCountdownBox(cur) {
       calculatedSchedule.forEach(row => {
         const stock = row.stockpileRemaining !== null ? `${row.stockpileRemaining}화` : '미입력';
         const vol = row.completedVolumeNum ? `${row.completedVolumeNum}권 마감` : '';
-        csv += `${row.date},${row.dayOfWeek},${row.epCount}화,${row.cumulativeEp}화,${stock},"${vol}","${row.note}"\n`;
+        csv += [row.date, row.dayOfWeek, `${row.epCount}화`, `${row.cumulativeEp}화`, stock, vol, row.note].map(csvCell).join(',') + '\n';
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -6753,10 +6847,20 @@ function renderLaunchCountdownBox(cur) {
         if (!badge) return;
         const cur = getCurrentProject();
         if (!cur) { badge.textContent = '작품 미선택'; return; }
-        const map = {};
-        (cur.writingLogs || []).forEach((l) => { if (l.date) map[l.date] = (map[l.date] || 0) + (parseInt(l.count, 10) || 0); });
+        const map = {}, cmap = {};
+        const cpe = parseInt(cur.charsPerEp, 10) || 5500;
+        (cur.writingLogs || []).forEach((l) => {
+          if (!l.date) return;
+          map[l.date] = (map[l.date] || 0) + (parseInt(l.count, 10) || 0);
+          cmap[l.date] = (cmap[l.date] || 0) + __logChars(l, cpe);
+        });
         const off = (d) => window.__isWritingOffDay(cur, d);
-        const met = (d) => { const plan = getDailyWritingPlanForDate(cur, d); return (map[d] || 0) >= (plan > 0 ? plan : 1); };
+        /* 회차로 채웠거나, 글자 수로 그만큼 썼으면 달성 (작업 기록 탭에서 글자 수로만 남긴 날도 인정) */
+        const met = (d) => {
+          const plan = getDailyWritingPlanForDate(cur, d);
+          if (plan > 0) return (map[d] || 0) >= plan || (cmap[d] || 0) >= plan * cpe;
+          return (map[d] || 0) > 0 || (cmap[d] || 0) > 0;
+        };
         const countFrom = (start) => {
           let n = 0; const c = new Date(start);
           for (let i = 0; i < 1000; i++) {
@@ -9007,38 +9111,7 @@ function renderLaunchCountdownBox(cur) {
         window.stopWorkTimer = stopWorkTimer;
       }
 
-      /* ---------- 하루 목표도 전체 백업에 포함 ---------- */
-      if (typeof exportJSON === 'function') {
-        const origStringify = JSON.stringify;
-        const origExport = exportJSON;
-        exportJSON = function () {
-          JSON.stringify = function (v, ...rest) {
-            if (v && typeof v === 'object' && Array.isArray(v.projects) && 'contracts' in v && 'exportDate' in v) {
-              JSON.stringify = origStringify;
-              return origStringify.call(JSON, { ...v, workGoal: getGoal() }, ...rest);
-            }
-            return origStringify.call(JSON, v, ...rest);
-          };
-          try { origExport.apply(this, arguments); } finally { JSON.stringify = origStringify; }
-        };
-        window.exportJSON = exportJSON;
-      }
-      const fileInput = document.getElementById('jsonFileInput');
-      if (fileInput) fileInput.addEventListener('change', (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-        const before = JSON.stringify(projects);
-        const rd = new FileReader();
-        rd.onload = () => {
-          try {
-            const data = JSON.parse(rd.result);
-            if (data && data.workGoal != null) {
-              setTimeout(() => { if (JSON.stringify(projects) !== before) { setGoal(parseInt(data.workGoal, 10) || 0); if (view.classList.contains('active')) renderAll(true); } }, 300);
-            }
-          } catch (err) {}
-        };
-        rd.readAsText(file);
-      });
+      /* 하루 목표는 기본 전체 백업(BACKUP_EXTRA_KEYS)에 함께 저장·복원돼요 */
 
       /* ---------- 체험용 샘플에 이번 달 기록 채우기 ---------- */
       if (typeof loadSampleData === 'function') {
@@ -9113,10 +9186,10 @@ function renderLaunchCountdownBox(cur) {
       /* ---------- 일정 계산: 마지막 실제 연재 다음 날부터 이어서 ---------- */
       const origSim = simulateProjectSchedule;
       /* 한 구간 계산: start 날짜부터, prev화까지 공개된 상태로 */
-      const simFrom = (p, start, prev) => {
+      const simFrom = (p, start, prev, stopDate) => {
         const phases = p.phases.filter((ph) => !(ph.endEp > 0 && ph.endEp <= prev));
         if (!phases.length) return [];
-        return origSim({ ...p, startDate: start, startPrevEp: String(prev), phases });
+        return origSim({ ...p, startDate: start, startPrevEp: String(prev), phases, __stopDate: stopDate || '' });
       };
       /* 실제 연재 기록 사이사이 구간은 원래 일정대로 보여 주고,
          마지막 실제 연재 뒤부터는 남은 회차를 이어서 계산해요 */
@@ -9130,7 +9203,7 @@ function renderLaunchCountdownBox(cur) {
         let segPrev = recs[0].prevBefore != null ? recs[0].prevBefore : recs[0].from - 1;
         recs.forEach((r) => {
           if (segStart <= r.date) {
-            simFrom(p, segStart, segPrev).forEach((it) => {
+            simFrom(p, segStart, segPrev, r.date).forEach((it) => {
               if (it.date < r.date && it.cumulativeEp <= r.from - 1) out.push(it);
             });
           }
@@ -9831,60 +9904,7 @@ function renderLaunchCountdownBox(cur) {
       renderList();
     });
 
-    // 6. 전체 백업(exportJSON) 및 복원(importJSON) 자동 묶음 처리
-    if (typeof window.exportJSON === 'function') {
-      const origExport = window.exportJSON;
-      window.exportJSON = function () {
-        const menu = document.getElementById('settingsMenu');
-        if (menu) menu.classList.remove('open');
-        saveCurrentProjectData();
-
-        const exportBundle = {
-          version: "3.0",
-          exportDate: new Date().toISOString(),
-          currentProjectId: currentProjectId,
-          projects: projects,
-          contracts: contracts,
-          vitamins: loadVitamins(),
-          vitaminCharm: JSON.parse(localStorage.getItem(CHARM_KEY) || 'null')
-        };
-
-        const jsonStr = JSON.stringify(exportBundle, null, 2);
-        const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8;" });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", `ARCHIVE_STUDIO_BACKUP_${formatDate(new Date())}.json`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        localStorage.setItem('archiveStudio_lastBackup', new Date().toISOString());
-        checkBackupReminder();
-      };
-    }
-
-    const fileInput = document.getElementById('jsonFileInput');
-    if (fileInput) {
-      fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (evt) {
-          try {
-            const imported = JSON.parse(evt.target.result);
-            if (imported.vitamins && Array.isArray(imported.vitamins)) {
-              saveVitamins(imported.vitamins);
-            }
-            if (imported.vitaminCharm) {
-              localStorage.setItem(CHARM_KEY, JSON.stringify(imported.vitaminCharm));
-            }
-            renderCharmBanner();
-            if (view.classList.contains('active')) renderVitaminView();
-          } catch (err) {}
-        };
-        reader.readAsText(file);
-      }, true);
-    }
+    // 6. 비타민 서랍은 기본 전체 백업(BACKUP_EXTRA_KEYS)에 함께 저장·복원돼요
 
     renderCharmBanner();
   })();
